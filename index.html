@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Athenaeum — CLT8 Prep</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #0D0A1A;
+      --surface: #161225;
+      --card: #1C1730;
+      --border: #2E2850;
+      --gold: #C8A84B;
+      --gold-dim: #8E7533;
+      --gold-bright: #E2C87A;
+      --text: #F2E8D0;
+      --text-dim: #9E8F75;
+      --text-muted: #6B5F4F;
+      --terracotta: #B87A6A;
+      --steel: #7A9EC8;
+      --sage: #8AB87A;
+      --green: #4A8C6F;
+      --green-lt: #6ABF94;
+      --red: #8B3030;
+      --red-lt: #C25050;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    .playfair { font-family: 'Playfair Display', Georgia, serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Flip card */
+    .flip-card { perspective: 1200px; }
+    .flip-card-inner {
+      position: relative; width: 100%; height: 100%;
+      transition: transform 0.55s cubic-bezier(0.4,0,0.2,1);
+      transform-style: preserve-3d;
+    }
+    .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+    .flip-card-front, .flip-card-back {
+      position: absolute; width: 100%; height: 100%;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+      border-radius: 14px; overflow: hidden;
+    }
+    .flip-card-back { transform: rotateY(180deg); }
+
+    /* Option buttons */
+    .opt-btn {
+      width: 100%; text-align: left;
+      padding: 12px 14px; border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text);
+      cursor: pointer; transition: all 0.15s;
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 16px; line-height: 1.45;
+    }
+    .opt-btn:hover:not(:disabled) { border-color: var(--gold-dim); background: var(--card); }
+    .opt-btn.sel    { border-color: var(--gold); background: rgba(200,168,75,0.1); }
+    .opt-btn.ok     { border-color: var(--green-lt); background: rgba(74,140,111,0.16); color: #8FDFC0; }
+    .opt-btn.bad    { border-color: var(--red-lt); background: rgba(139,48,48,0.16); color: #FF9090; }
+    .opt-btn:disabled { cursor: default; }
+
+    /* Nav */
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; padding: 8px 4px;
+      border: none; background: transparent; cursor: pointer;
+      transition: all 0.15s; color: var(--text-muted);
+      font-family: 'Crimson Pro', serif; font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+    .nav-btn.active { color: var(--gold); }
+
+    /* Progress ring */
+    .ring-track { fill: none; stroke: var(--border); stroke-width: 3; }
+    .ring-fill  { fill: none; stroke: var(--gold); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.7s ease; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.35s ease; }
+
+    /* Decorative rule */
+    .rule { height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim) 40%, var(--gold-dim) 60%, transparent); opacity: 0.4; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+/* ══════════════════════════ ICONS ══════════════════════════ */
+const svgProps = { viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"1.8", strokeLinecap:"round", strokeLinejoin:"round" };
+
+const HomeIcon  = ({s=22})=><svg width={s} height={s} {...svgProps}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+const BookIcon  = ({s=22})=><svg width={s} height={s} {...svgProps}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>;
+const PenIcon   = ({s=22})=><svg width={s} height={s} {...svgProps}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
+const ScrollIcon= ({s=22})=><svg width={s} height={s} {...svgProps}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>;
+const SigmaIcon = ({s=22})=><svg width={s} height={s} {...svgProps}><path d="M18 7V4H6l6 8-6 8h12v-3"/></svg>;
+const ChevR     = ({s=18})=><svg width={s} height={s} {...svgProps}><polyline points="9 18 15 12 9 6"/></svg>;
+const ChevL     = ({s=18})=><svg width={s} height={s} {...svgProps}><polyline points="15 18 9 12 15 6"/></svg>;
+const Refresh   = ({s=18})=><svg width={s} height={s} {...svgProps}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.5"/></svg>;
+const StarIcon  = ({s=15,f=false})=><svg width={s} height={s} viewBox="0 0 24 24" fill={f?"currentColor":"none"} stroke="currentColor" strokeWidth="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+const CheckIcon = ({s=18})=><svg width={s} height={s} {...svgProps} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>;
+
+/* ══════════════════════════ STORAGE ══════════════════════════ */
+const NS = 'clt8:';
+const gs = k => { try { return JSON.parse(localStorage.getItem(NS+k)); } catch { return null; } };
+const ss = (k,v) => { try { localStorage.setItem(NS+k, JSON.stringify(v)); } catch {} };
+
+/* ══════════════════════════ DATA ══════════════════════════ */
+
+const VOCAB = [
+  { word:"Veracious",    pos:"adj.", def:"Habitually speaking the truth; honest and accurate", ex:"The veracious historian never embellished facts, even when the truth was unflattering.", root:"Latin verus (true) → verax", syns:"truthful, candid, accurate" },
+  { word:"Perspicacious",pos:"adj.", def:"Having a ready insight into things; keenly perceptive", ex:"The perspicacious student spotted the logical flaw before the teacher pointed it out.", root:"Latin perspicax, from perspicere (to see through)", syns:"astute, discerning, perceptive" },
+  { word:"Magnanimous",  pos:"adj.", def:"Generous or forgiving toward a rival or enemy; nobly great of mind", ex:"The magnanimous victor allowed the defeated soldiers to return home unharmed.", root:"Latin magnus (great) + animus (soul, mind)", syns:"generous, noble, benevolent" },
+  { word:"Pernicious",   pos:"adj.", def:"Having a harmful or destructive effect, often subtly or gradually", ex:"Aristotle warned of pernicious habits that corrupt character before one notices.", root:"Latin perniciosus, from pernicies (ruin)", syns:"harmful, destructive, injurious" },
+  { word:"Sagacious",    pos:"adj.", def:"Having or showing keen judgment and wisdom; discerning", ex:"The sagacious counselor warned the king before ambition became his undoing.", root:"Latin sagax (wise, keen-nosed)", syns:"wise, shrewd, judicious" },
+  { word:"Ephemeral",    pos:"adj.", def:"Lasting only a very short time; transitory", ex:"The poet argued that beauty is ephemeral, but virtue endures through ages.", root:"Greek ephemeros: epi (on) + hemera (day)", syns:"fleeting, transient, momentary" },
+  { word:"Sanguine",     pos:"adj.", def:"Optimistic, especially in a difficult situation; confidently cheerful", ex:"Despite the siege, the commander remained sanguine about relief arriving.", root:"Latin sanguineus (of blood) — blood once thought to produce cheerfulness", syns:"optimistic, hopeful, buoyant" },
+  { word:"Equanimity",   pos:"n.",   def:"Mental calmness and composure, especially in difficult situations", ex:"Socrates faced the death sentence with an equanimity that astonished his accusers.", root:"Latin aequus (equal) + animus (mind)", syns:"composure, serenity, imperturbability" },
+  { word:"Perfidy",      pos:"n.",   def:"The state of being deceitful and untrustworthy; deliberate treachery", ex:"Dante placed those guilty of perfidy in the deepest circle of Hell.", root:"Latin perfidia, from per (through) + fides (faith)", syns:"treachery, betrayal, faithlessness" },
+  { word:"Laconic",      pos:"adj.", def:"Using very few words; brief and concise to the point of seeming rude", ex:"The Spartan reply to Philip of Macedon was famously laconic: a single word, 'If.'", root:"Greek Lakonikos — of Laconia (Sparta), renowned for brevity", syns:"terse, succinct, pithy" },
+  { word:"Pellucid",     pos:"adj.", def:"Translucently clear; easily understood", ex:"His argument was pellucid — no ambiguity, no unnecessary qualification.", root:"Latin pellucidus, from per + lucere (to shine)", syns:"clear, lucid, transparent" },
+  { word:"Inveterate",   pos:"adj.", def:"Having a habit long-established and unlikely to change", ex:"He was an inveterate reader who could not pass a day without books.", root:"Latin inveteratus: in + vetus, veteris (old)", syns:"habitual, chronic, confirmed" },
+  { word:"Truculent",    pos:"adj.", def:"Eager or quick to argue or fight; aggressively defiant", ex:"The truculent nobleman challenged every ruling, refusing even reasonable compromise.", root:"Latin truculentus, from trux (fierce, savage)", syns:"combative, belligerent, contentious" },
+  { word:"Supercilious", pos:"adj.", def:"Behaving as though one thinks oneself superior to others", ex:"The supercilious critic dismissed each new work with a raised eyebrow.", root:"Latin superciliosus (haughty), from supercilium (eyebrow — the raised brow of disdain)", syns:"arrogant, disdainful, condescending" },
+  { word:"Obsequious",   pos:"adj.", def:"Excessively obedient or attentive; fawningly compliant", ex:"The obsequious courtier agreed with every word the king uttered.", root:"Latin obsequium (compliance), from ob + sequi (to follow)", syns:"servile, sycophantic, fawning" },
+  { word:"Prodigious",   pos:"adj.", def:"Remarkably great in extent, size, or degree; extraordinary", ex:"Mozart's prodigious memory allowed him to transcribe a full composition after one hearing.", root:"Latin prodigiosus, from prodigium (omen, portent)", syns:"extraordinary, immense, remarkable" },
+  { word:"Recondite",    pos:"adj.", def:"Not widely known; dealing with obscure subject matter", ex:"The scholar's recondite knowledge of early Church councils impressed even the specialists.", root:"Latin reconditus: re + condere (to store away, conceal)", syns:"obscure, esoteric, abstruse" },
+  { word:"Propitious",   pos:"adj.", def:"Giving or indicating a good chance of success; favorably auspicious", ex:"The calm seas and favorable winds seemed propitious for the expedition.", root:"Latin propitius (favorable, well-disposed)", syns:"favorable, auspicious, promising" },
+  { word:"Mellifluous",  pos:"adj.", def:"Pleasingly smooth and musical to the ear; honeyed in sound", ex:"The preacher's mellifluous voice drew listeners into a near-meditative calm.", root:"Latin mellifluus: mel (honey) + fluere (to flow)", syns:"melodious, dulcet, euphonious" },
+  { word:"Imperious",    pos:"adj.", def:"Assuming power or authority without justification; domineering", ex:"Her imperious manner made clear she expected instant obedience from everyone.", root:"Latin imperiosus, from imperium (command, empire)", syns:"domineering, overbearing, autocratic" },
+];
+
+const GRAMMAR = [
+  { id:'g1', q:"Which sentence contains a grammatical error?",
+    opts:["Neither the students nor the teacher was prepared for the storm.","Each of the philosophers presented their arguments clearly.","The committee has reached its decision unanimously.","Whoever finishes first may leave the examination hall."],
+    ans:1, exp:"\"Each\" is singular, requiring a singular pronoun: \"his or her arguments,\" not \"their.\" (Option A uses correct neither…nor agreement; C treats a collective noun as singular; D uses 'whoever' correctly as the subject of 'finishes.')" },
+  { id:'g2', q:"Which option best corrects the misplaced modifier?\n\nOriginal: \"Running through the library, the books fell off the shelf.\"",
+    opts:["Running through the library, the shelf was knocked over.","As Maria ran through the library, the books fell off the shelf.","The books, running through the library, fell off the shelf.","Running through the library caused books to fall off the shelf."],
+    ans:1, exp:"The participial phrase \"Running through the library\" must modify a person, not the books. Option B restructures the sentence so that Maria is clearly the one running." },
+  { id:'g3', q:"Identify the sentence with an error in parallel structure:",
+    opts:["Aristotle argued that virtue requires practice, discipline, and habituation.","The student enjoyed reading philosophy, writing essays, and to debate ideas.","She learned to reason clearly, to argue fairly, and to question honestly.","Socrates was renowned for his wisdom, his irony, and his courage."],
+    ans:1, exp:"\"Reading philosophy, writing essays, and to debate\" breaks parallel structure. All items must share the same grammatical form: \"reading … writing … and debating.\"" },
+  { id:'g4', q:"Which sentence uses the semicolon correctly?",
+    opts:["The Iliad is an ancient epic; that describes the Trojan War.","We studied three great texts; the Aeneid, the Odyssey, and Beowulf.","Homer was a poet; he composed both the Iliad and the Odyssey.","The argument was convincing; because it was well-supported."],
+    ans:2, exp:"A semicolon correctly joins two independent clauses. Option C places a complete thought on each side. Options A and D precede dependent clauses (\"that…\" / \"because…\"); Option B should use a colon before the list." },
+  { id:'g5', q:"Choose the sentence in which subject and verb agree correctly:",
+    opts:["The number of scholars studying Latin have increased.","A series of lectures were delivered this semester.","Economics are considered a challenging subject.","The council has reached a unanimous verdict."],
+    ans:3, exp:"\"Council\" is a collective noun treated as singular in American English, so \"has\" is correct. \"The number,\" \"a series,\" and \"Economics\" (as a discipline) also take singular verbs — only option D is correct as written." },
+  { id:'g6', q:"Which sentence uses pronoun case correctly?",
+    opts:["Between you and I, the reading was too difficult.","The prize was awarded to she who studied most diligently.","It was he who inscribed the marginal notes in the manuscript.","Us students read more classical texts than them."],
+    ans:2, exp:"After a linking verb, the nominative (subject) case is required: \"It was he.\" Corrections: \"Between you and me\" (object of preposition); \"awarded to her\" (object); \"We students … than they\" (nominative)." },
+  { id:'g7', q:"Which sentence correctly uses affect (verb) vs. effect (noun)?",
+    opts:["The speech had a profound affect on the assembly.","Grief can effect a person in unexpected ways.","Hard work will positively affect your score.","What affect did the reform have on trade?"],
+    ans:2, exp:"\"Affect\" as a verb means to influence. Only option C uses it correctly as a verb. The other options confuse part-of-speech: \"affect\" used as noun, \"effect\" used as verb." },
+  { id:'g8', q:"Which revision corrects the dangling modifier?\n\nOriginal: \"Having studied all night, the exam seemed easy.\"",
+    opts:["Having studied all night, it seemed the exam was easy.","The exam, having studied all night, seemed easy.","Having studied all night, Thomas found the exam straightforward.","After an all-night study session, the exam's difficulty decreased."],
+    ans:2, exp:"The participial phrase \"Having studied all night\" must modify the person who studied. Only option C supplies a person (Thomas) as the grammatical subject of the sentence." },
+  { id:'g9', q:"Identify the sentence with correct apostrophe usage:",
+    opts:["The philosophers' idea's were revolutionary.","Each student must bring their own pencil's to the exam.","The class's discussion of virtue lasted two full hours.","Its' binding was cracked from centuries of use."],
+    ans:2, exp:"\"Class's\" is the correct singular possessive. \"Ideas\" is plural (no apostrophe); \"pencils\" is plural (no apostrophe); \"Its'\" does not exist — the possessive \"its\" never takes an apostrophe." },
+  { id:'g10', q:"Which is a complete sentence — neither a fragment nor a run-on?",
+    opts:["Because the manuscript was lost for eight centuries.","The text was rediscovered in a monastery, scholars immediately recognized its value.","Running through history like a golden thread, the idea of natural law.","Plato wrote dialogues; Aristotle preferred treatises."],
+    ans:3, exp:"Option D correctly joins two independent clauses with a semicolon. A is a subordinate-clause fragment; B is a comma splice (run-on joining two independent clauses with only a comma); C lacks a main verb." },
+];
+
+const PASSAGES = [
+  {
+    id:'p1', title:"Plato's Apology",
+    source:"Plato, Apology — trans. Jowett (1871). Public Domain.",
+    text:`I have said enough in answer to the charge of Meletus: any elaborate defence is unnecessary; but I know only too well how many are the enmities which I have incurred, and this is what will be my destruction if I am destroyed — not Meletus, nor yet Anytus, but the envy and detraction of the world, which has been the death of many good men, and will probably be the death of many more.
+
+There is no danger of my being the last of them.
+
+Some one will say: And are you not ashamed, Socrates, of a course of life which is likely to bring you to an untimely end? To him I may fairly answer: There you are mistaken: a man who is good for anything ought not to calculate the chance of living or dying; he ought only to consider whether in doing anything he is doing right or wrong — acting the part of a good man or of a bad.`,
+    qs:[
+      { id:'p1q1', q:"According to Socrates, what poses the greatest threat to his life?",
+        opts:["The formal accusations brought by Meletus","The political influence of Anytus in Athens","The envy and hostility of the general public","The unpredictability of the Athenian court"],
+        ans:2, exp:"Socrates explicitly states that \"the envy and detraction of the world\" will be his destruction — not Meletus or Anytus specifically." },
+      { id:'p1q2', q:"What does Socrates suggest by saying he will \"not be the last\" to be destroyed in this way?",
+        opts:["He plans to escape before his sentence is carried out","Good men have been and will continue to be unjustly persecuted","His followers will carry on his philosophical work after his death","The court will continue prosecuting any philosopher who speaks publicly"],
+        ans:1, exp:"Socrates places himself in a tradition of good men destroyed by envy — implying this injustice is recurring, not isolated." },
+      { id:'p1q3', q:"When Socrates says \"There you are mistaken\" to the hypothetical critic, he is challenging the assumption that:",
+        opts:["One's reputation matters more than one's life","Philosophical inquiry brings shame","Self-preservation should be a person's primary concern","The gods reward virtuous men with long lives"],
+        ans:2, exp:"The critic assumes Socrates should avoid paths leading to death. Socrates' rebuttal is that a good person should weigh right and wrong, not life and death." },
+      { id:'p1q4', q:"The passage as a whole most strongly suggests that Socrates values:",
+        opts:["Political success above philosophical principle","Moral integrity above personal safety","Popular approval above reasoned argument","Legal compliance above personal conscience"],
+        ans:1, exp:"Socrates argues a good man should consider right versus wrong rather than survival — placing moral integrity explicitly above self-preservation." },
+    ],
+  },
+  {
+    id:'p2', title:"Aristotle's Nicomachean Ethics",
+    source:"Aristotle, Nicomachean Ethics, Book I — trans. Ross (1908). Public Domain.",
+    text:`Every art and every inquiry, and similarly every action and pursuit, is thought to aim at some good; and for this reason the good has rightly been declared to be that at which all things aim.
+
+But a certain difference is found among ends: some are activities, others are products apart from the activities that produce them. Where there are ends apart from the actions, it is the nature of the products to be better than the activities.
+
+Now, as there are many actions, arts, and sciences, their ends also are many; the end of the medical art is health, that of shipbuilding a vessel, that of strategy victory, that of economics wealth. But where such arts fall under a single faculty — as bridle-making and the other arts concerned with the equipment of horses fall under the art of riding — in all of these the ends of the master arts are to be preferred to all the subordinate ends.`,
+    qs:[
+      { id:'p2q1', q:"Aristotle's opening statement — that everything aims at some good — functions primarily as:",
+        opts:["A mathematical proof","A definition of the word 'good'","A foundational premise for his ethical inquiry","An empirical law derived from observation"],
+        ans:2, exp:"The statement anchors the entire inquiry into what the highest good is. It works as a foundational premise, not a proof, definition, or empirical claim." },
+      { id:'p2q2', q:"According to the passage, when should the ends of a master art take priority?",
+        opts:["When the subordinate arts produce physical products","When several arts fall under a single overarching discipline","When the activity itself is more valuable than its product","When multiple craftsmen collaborate on a single task"],
+        ans:1, exp:"Aristotle states that where subordinate arts fall under a master art, \"the ends of the master arts are to be preferred to all the subordinate ends.\"" },
+      { id:'p2q3', q:"Aristotle introduces the distinction between \"activities\" and \"products\" primarily to:",
+        opts:["Argue that physical crafts are inferior to mental ones","Show that all ends are of equal value","Establish that some ends are more final than others","Prove that medicine is the highest of the arts"],
+        ans:2, exp:"Noting that products surpass activities when ends differ prepares Aristotle's argument that some ends (like happiness) are chosen purely for themselves — making them more final than intermediate ends." },
+      { id:'p2q4', q:"Which best describes Aristotle's method in this passage?",
+        opts:["He begins with a concrete example and reasons toward an abstract principle","He states a broad principle then supports it with concrete examples","He challenges a popular opinion by citing a decisive counterexample","He defines key terms precisely before making any claims"],
+        ans:1, exp:"Aristotle opens with a general claim (all things aim at good), then moves to specific examples — medicine, shipbuilding, strategy, economics — to illustrate his distinctions. This is deductive in direction." },
+    ],
+  },
+];
+
+const MATH = [
+  { id:'m1',  q:"If 3x − 7 = 14, what is the value of x?",
+    opts:["5","7","9","11"], ans:1, exp:"Add 7 to both sides: 3x = 21. Divide by 3: x = 7." },
+  { id:'m2',  q:"A rectangle has length 12 cm and a width that is ¹⁄₃ of its length. What is the area?",
+    opts:["16 cm²","36 cm²","48 cm²","144 cm²"], ans:2, exp:"Width = ¹⁄₃ × 12 = 4 cm. Area = 12 × 4 = 48 cm²." },
+  { id:'m3',  q:"What is the value of 2³ + 4² − √25?",
+    opts:["19","21","23","27"], ans:0, exp:"2³ = 8, 4² = 16, √25 = 5. Sum: 8 + 16 − 5 = 19." },
+  { id:'m4',  q:"The ratio of boys to girls in a class is 3 : 5. If there are 24 boys, how many students total are in the class?",
+    opts:["40","56","64","72"], ans:2, exp:"3 parts = 24 → 1 part = 8. Girls = 5 × 8 = 40. Total = 24 + 40 = 64." },
+  { id:'m5',  q:"If f(x) = 2x² − 3, what is f(−2)?",
+    opts:["−11","1","5","−5"], ans:2, exp:"f(−2) = 2(−2)² − 3 = 2(4) − 3 = 8 − 3 = 5." },
+  { id:'m6',  q:"Two angles of a triangle measure 47° and 68°. What is the measure of the third angle?",
+    opts:["55°","65°","75°","85°"], ans:1, exp:"Triangle angles sum to 180°. 47 + 68 = 115. Third angle = 180 − 115 = 65°." },
+  { id:'m7',  q:"Pencils cost $0.35 each and pens cost $1.20 each. A student buys 4 pencils and 3 pens. How much does she spend?",
+    opts:["$4.20","$4.60","$5.00","$5.40"], ans:2, exp:"4 × $0.35 = $1.40. 3 × $1.20 = $3.60. Total = $1.40 + $3.60 = $5.00." },
+  { id:'m8',  q:"What is the least common multiple (LCM) of 12 and 18?",
+    opts:["6","24","36","72"], ans:2, exp:"12 = 2² × 3; 18 = 2 × 3². LCM = 2² × 3² = 4 × 9 = 36." },
+  { id:'m9',  q:"A line passes through the points (0, 3) and (4, 11). What is the slope of the line?",
+    opts:["½","1","2","3"], ans:2, exp:"Slope = (y₂ − y₁)/(x₂ − x₁) = (11 − 3)/(4 − 0) = 8/4 = 2." },
+  { id:'m10', q:"The mean of five test scores is 82. Four of the scores are 78, 85, 90, and 74. What is the fifth score?",
+    opts:["79","81","83","87"], ans:2, exp:"Sum of all 5 = 82 × 5 = 410. Sum of 4 known = 78 + 85 + 90 + 74 = 327. Fifth score = 410 − 327 = 83." },
+];
+
+/* ══════════════════════════ SHARED COMPONENTS ══════════════════════════ */
+
+function ProgressBar({ pct, color }) {
+  return (
+    <div style={{ height:3, background:'#1E1C2E', borderRadius:2, overflow:'hidden', marginBottom:20 }}>
+      <div style={{ height:'100%', background:`linear-gradient(90deg,${color},${color}cc)`, borderRadius:2, width:`${pct}%`, transition:'width 0.4s' }}/>
+    </div>
+  );
+}
+
+function Ring({ pct, size=64, label, color='#C8A84B' }) {
+  const r = (size-8)/2;
+  const circ = 2*Math.PI*r;
+  const offset = circ*(1-pct/100);
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <svg width={size} height={size}>
+        <circle className="ring-track" cx={size/2} cy={size/2} r={r}/>
+        <circle className="ring-fill" cx={size/2} cy={size/2} r={r}
+          style={{ stroke:color }}
+          strokeDasharray={circ} strokeDashoffset={offset}
+          transform={`rotate(-90 ${size/2} ${size/2})`}/>
+        <text x={size/2} y={size/2} dominantBaseline="middle" textAnchor="middle"
+          fill={color} fontSize={size*0.21} fontFamily="JetBrains Mono" fontWeight="500">
+          {Math.round(pct)}%
+        </text>
+      </svg>
+      {label && <span style={{ color:'#9E8F75', fontSize:10, fontFamily:'Crimson Pro', letterSpacing:'0.07em' }}>{label}</span>}
+    </div>
+  );
+}
+
+function ResultCard({ correct, total, color, onReset }) {
+  const pct = total > 0 ? Math.round(correct/total*100) : 0;
+  return (
+    <div style={{ padding:'48px 24px', textAlign:'center' }}>
+      <Ring pct={pct} size={96} color={color}/>
+      <div className="playfair" style={{ fontSize:42, fontWeight:700, color:'#F2E8D0', lineHeight:1, marginTop:20 }}>{pct}%</div>
+      <div style={{ color:'#9E8F75', fontFamily:'Crimson Pro', fontSize:17, marginTop:8, marginBottom:36 }}>
+        {correct} of {total} answered correctly
+      </div>
+      <button onClick={onReset} style={{ background:`${color}1A`, border:`1px solid ${color}60`, color, fontFamily:'Crimson Pro', fontSize:16, padding:'10px 28px', borderRadius:8, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:8 }}>
+        <Refresh s={16}/> Restart Drill
+      </button>
+    </div>
+  );
+}
+
+function QuestionCard({ prompt, opts, ans, answered, selected, onSelect, color, hint }) {
+  return (
+    <>
+      <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:18, marginBottom:14 }}>
+        {hint && <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>{hint}</div>}
+        <div style={{ color:'#F2E8D0', fontSize:16.5, lineHeight:1.55, fontFamily:'Crimson Pro', whiteSpace:'pre-line' }}>{prompt}</div>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
+        {opts.map((opt,i)=>{
+          let cls='opt-btn';
+          if(answered){ if(i===ans) cls+=' ok'; else if(selected===i) cls+=' bad'; }
+          else if(selected===i) cls+=' sel';
+          return (
+            <button key={i} className={cls} disabled={answered} onClick={()=>onSelect(i)}>
+              <span style={{ display:'inline-flex', gap:10, alignItems:'flex-start' }}>
+                <span style={{ fontFamily:'JetBrains Mono', fontSize:11, opacity:0.45, minWidth:16, paddingTop:1, flexShrink:0 }}>{String.fromCharCode(65+i)}</span>
+                <span>{opt}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function ExplanationBox({ correct, text }) {
+  return (
+    <div style={{ background:correct?'rgba(74,140,111,0.12)':'rgba(139,48,48,0.12)', border:`1px solid ${correct?'#4A8C6F':'#8B3030'}`, borderRadius:9, padding:14, marginBottom:14 }}>
+      <div style={{ color:correct?'#6ABF94':'#C25050', fontWeight:600, fontFamily:'Crimson Pro', fontSize:14, marginBottom:5 }}>
+        {correct?'✓ Correct':'✗ Incorrect'}
+      </div>
+      <div style={{ color:'#9E8F75', fontSize:14.5, lineHeight:1.6, fontFamily:'Crimson Pro' }}>{text}</div>
+    </div>
+  );
+}
+
+function SectionHeader({ color, supra, title, counter }) {
+  return (
+    <div style={{ background:'#161225', padding:'20px 16px 16px', borderBottom:'1px solid #2E2850' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <div style={{ color, fontSize:10, letterSpacing:'0.28em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:2 }}>{supra}</div>
+          <h2 className="playfair" style={{ fontSize:20, color:'#F2E8D0', margin:0 }}>{title}</h2>
+        </div>
+        {counter && <div style={{ color:'#9E8F75', fontSize:13, fontFamily:'JetBrains Mono' }}>{counter}</div>}
+      </div>
+    </div>
+  );
+}
+
+function NextButton({ onClick, label, color }) {
+  return (
+    <button onClick={onClick} style={{ width:'100%', height:46, borderRadius:8, border:`1px solid ${color}60`, background:`${color}14`, color, cursor:'pointer', fontFamily:'Crimson Pro', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+      {label} <ChevR s={16}/>
+    </button>
+  );
+}
+
+/* ══════════════════════════ HOME SCREEN ══════════════════════════ */
+
+function HomeScreen({ progress, onTab }) {
+  const mastered = progress.vocab?.mastered?.length || 0;
+  const gPct = calcPct(progress.grammar);
+  const rPct = calcPct(progress.reading);
+  const mPct = calcPct(progress.math);
+
+  const sections = [
+    { id:'verbal',  label:'Verbal Reasoning',      sub:'Vocabulary & Word Roots',    Icon:<BookIcon s={22}/>,  color:'#C8A84B', ring:Math.round(mastered/VOCAB.length*100), badge:`${mastered}/${VOCAB.length} words` },
+    { id:'grammar', label:'Grammar & Usage',        sub:'Sentence Mechanics',          Icon:<PenIcon s={22}/>,   color:'#B87A6A', ring:gPct,  badge:`${GRAMMAR.length} questions` },
+    { id:'reading', label:'Reading Comprehension',  sub:'Classical Passages',          Icon:<ScrollIcon s={22}/>,color:'#7A9EC8', ring:rPct,  badge:`${PASSAGES.length} passages`  },
+    { id:'math',    label:'Quantitative Reasoning', sub:'Algebra & Geometry',          Icon:<SigmaIcon s={22}/>, color:'#8AB87A', ring:mPct,  badge:`${MATH.length} problems`      },
+  ];
+
+  return (
+    <div style={{ paddingBottom:24 }}>
+      {/* Header */}
+      <div style={{ background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)', padding:'44px 20px 32px', textAlign:'center', borderBottom:'1px solid #2E2850', position:'relative', overflow:'hidden' }}>
+        {/* Decorative circles */}
+        <div style={{ position:'absolute', top:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(200,168,75,0.06) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-40, left:-40, width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle, rgba(122,158,200,0.05) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ color:'#C8A84B', fontSize:11, letterSpacing:'0.35em', fontFamily:'Crimson Pro', marginBottom:10, textTransform:'uppercase', opacity:0.8 }}>✦ Classic Learning Test · Grade 8 ✦</div>
+        <h1 className="playfair" style={{ fontSize:34, fontWeight:700, color:'#F2E8D0', margin:0, lineHeight:1.1, textShadow:'0 0 30px rgba(200,168,75,0.25)' }}>The Athenaeum</h1>
+        <p style={{ color:'#9E8F75', fontSize:15, marginTop:10, fontStyle:'italic', fontFamily:'Crimson Pro', marginBottom:0 }}>CLT8 Study Companion</p>
+      </div>
+
+      {/* Progress Rings */}
+      <div style={{ display:'flex', justifyContent:'space-around', padding:'24px 12px', borderBottom:'1px solid #1E1C2E' }}>
+        <Ring pct={Math.round(mastered/VOCAB.length*100)} size={64} label="Vocab" color="#C8A84B"/>
+        <Ring pct={gPct}  size={64} label="Grammar" color="#B87A6A"/>
+        <Ring pct={rPct}  size={64} label="Reading" color="#7A9EC8"/>
+        <Ring pct={mPct}  size={64} label="Math"    color="#8AB87A"/>
+      </div>
+
+      {/* Section Cards */}
+      <div style={{ padding:'18px 14px 0' }}>
+        <div style={{ color:'#4A3F30', fontSize:10, letterSpacing:'0.25em', textTransform:'uppercase', marginBottom:10, fontFamily:'Crimson Pro' }}>Study Sections</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {sections.map(s=>(
+            <button key={s.id} onClick={()=>onTab(s.id)} style={{ display:'flex', alignItems:'center', gap:14, background:'#161225', border:'1px solid #2E2850', borderRadius:11, padding:'14px 16px', cursor:'pointer', textAlign:'left', transition:'all 0.18s', width:'100%' }}
+              onMouseOver={e=>{e.currentTarget.style.borderColor=s.color;e.currentTarget.style.background='#1C1730';}}
+              onMouseOut={e=>{e.currentTarget.style.borderColor='#2E2850';e.currentTarget.style.background='#161225';}}>
+              <div style={{ width:44, height:44, borderRadius:10, background:`${s.color}16`, border:`1px solid ${s.color}38`, display:'flex', alignItems:'center', justifyContent:'center', color:s.color, flexShrink:0 }}>{s.Icon}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ color:'#F2E8D0', fontFamily:'Playfair Display', fontSize:15, fontWeight:600, marginBottom:2 }}>{s.label}</div>
+                <div style={{ color:'#9E8F75', fontSize:13, fontFamily:'Crimson Pro' }}>{s.sub}</div>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3 }}>
+                <div style={{ background:`${s.color}1E`, color:s.color, fontSize:11, padding:'2px 9px', borderRadius:20, fontFamily:'JetBrains Mono', fontWeight:500, whiteSpace:'nowrap' }}>{s.ring}%</div>
+                <div style={{ color:'#4A3F30', fontSize:11, fontFamily:'Crimson Pro' }}>{s.badge}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer quote */}
+      <div style={{ padding:'28px 24px 0', textAlign:'center' }}>
+        <div className="rule" style={{ marginBottom:20 }}/>
+        <div style={{ color:'#6B5F4F', fontSize:14, fontStyle:'italic', fontFamily:'Crimson Pro', lineHeight:1.65 }}>
+          "The more you know, the more you know you don't know."
+        </div>
+        <div style={{ color:'#3A3020', fontSize:11, marginTop:5, fontFamily:'Crimson Pro', letterSpacing:'0.12em' }}>— Aristotle</div>
+      </div>
+    </div>
+  );
+}
+
+function calcPct(section) {
+  if (!section) return 0;
+  const c = section.correct?.length || 0;
+  const w = section.wrong?.length || 0;
+  return c+w > 0 ? Math.round(c/(c+w)*100) : 0;
+}
+
+/* ══════════════════════════ VOCAB DRILL ══════════════════════════ */
+
+function VocabDrill({ progress, onProgress }) {
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [mode, setMode] = useState('card');
+  const [qIdx, setQIdx] = useState(0);
+  const [quizOpts, setQuizOpts] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+
+  const mastered = progress?.mastered || [];
+  const word = VOCAB[idx];
+  const isMastered = mastered.includes(word.word);
+
+  useEffect(() => {
+    if (mode !== 'quiz') return;
+    const correct = VOCAB[qIdx].def;
+    const others = VOCAB.filter((_,i)=>i!==qIdx).map(w=>w.def).sort(()=>Math.random()-0.5).slice(0,3);
+    setQuizOpts([correct,...others].sort(()=>Math.random()-0.5));
+    setSelected(null); setAnswered(false);
+  }, [qIdx, mode]);
+
+  const toggleMaster = () => {
+    const nm = isMastered ? mastered.filter(w=>w!==word.word) : [...mastered, word.word];
+    onProgress({ ...progress, mastered: nm });
+  };
+
+  const nav = (dir) => {
+    if (mode==='card') { setIdx(i=>(i+dir+VOCAB.length)%VOCAB.length); setFlipped(false); }
+    else setQIdx(i=>(i+dir+VOCAB.length)%VOCAB.length);
+  };
+
+  const handleQuizSelect = opt => {
+    if (answered) return;
+    setSelected(opt); setAnswered(true);
+    if (opt === VOCAB[qIdx].def) {
+      const nm = mastered.includes(VOCAB[qIdx].word) ? mastered : [...mastered, VOCAB[qIdx].word];
+      onProgress({ ...progress, mastered: nm });
+    }
+  };
+
+  const current = mode==='card' ? idx : qIdx;
+
+  return (
+    <div>
+      <SectionHeader color="#C8A84B" supra="Verbal Reasoning" title="Vocabulary" counter={`${current+1} / ${VOCAB.length}`}/>
+      <div style={{ padding:'14px 14px 0' }}>
+        {/* Mode toggle */}
+        <div style={{ display:'flex', background:'#0D0A1A', borderRadius:8, padding:3, gap:3, marginBottom:14 }}>
+          {['card','quiz'].map(m=>(
+            <button key={m} onClick={()=>{setMode(m);setFlipped(false);}} style={{ flex:1, padding:'6px 0', borderRadius:6, border:'none', cursor:'pointer', background:mode===m?'#1C1730':'transparent', color:mode===m?'#C8A84B':'#6B5F4F', fontFamily:'Crimson Pro', fontSize:14, fontWeight:mode===m?600:400, transition:'all 0.18s', letterSpacing:'0.04em' }}>
+              {m==='card'?'Flashcard':'Quiz Mode'}
+            </button>
+          ))}
+        </div>
+
+        {/* Mastery bar */}
+        <div style={{ marginBottom:4 }}>
+          <ProgressBar pct={mastered.length/VOCAB.length*100} color="#C8A84B"/>
+        </div>
+        <div style={{ color:'#6B5F4F', fontSize:11, fontFamily:'Crimson Pro', textAlign:'right', marginTop:-14, marginBottom:12 }}>
+          {mastered.length} of {VOCAB.length} mastered
+        </div>
+
+        {mode==='card' ? (
+          <>
+            <div className={`flip-card${flipped?' flipped':''}`} style={{ height:290, cursor:'pointer', marginBottom:14 }} onClick={()=>setFlipped(f=>!f)}>
+              <div className="flip-card-inner">
+                {/* Front */}
+                <div className="flip-card-front" style={{ background:'#1C1730', border:'1px solid #2E2850', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:28, textAlign:'center' }}>
+                  <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.2em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:6 }}>{word.pos}</div>
+                  <div className="playfair" style={{ fontSize:34, fontWeight:700, color:'#F2E8D0', lineHeight:1.1, marginBottom:10 }}>{word.word}</div>
+                  <div className="rule" style={{ width:60, marginBottom:12 }}/>
+                  <div style={{ color:'#C8A84B80', fontSize:12, fontFamily:'Crimson Pro', fontStyle:'italic', lineHeight:1.5 }}>{word.root}</div>
+                  <div style={{ marginTop:22, color:'#4A3F30', fontSize:12, fontFamily:'Crimson Pro', letterSpacing:'0.08em' }}>tap to reveal →</div>
+                </div>
+                {/* Back */}
+                <div className="flip-card-back" style={{ background:'#1A1330', border:'1px solid #C8A84B38', display:'flex', flexDirection:'column', justifyContent:'center', padding:20, gap:10 }}>
+                  <div style={{ color:'#C8A84B', fontFamily:'Crimson Pro', fontSize:10, letterSpacing:'0.2em', textTransform:'uppercase' }}>Definition</div>
+                  <div style={{ color:'#F2E8D0', fontFamily:'Crimson Pro', fontSize:16, lineHeight:1.55 }}>{word.def}</div>
+                  <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:8, padding:10 }}>
+                    <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.15em', textTransform:'uppercase', marginBottom:4, fontFamily:'Crimson Pro' }}>Example</div>
+                    <div style={{ color:'#C8A84B', fontStyle:'italic', fontSize:14, lineHeight:1.5, fontFamily:'Crimson Pro' }}>{word.ex}</div>
+                  </div>
+                  <div style={{ color:'#9E8F75', fontSize:12.5, fontFamily:'Crimson Pro' }}>
+                    <span style={{ color:'#4A3F30' }}>Synonyms: </span>{word.syns}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>nav(-1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#9E8F75', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevL s={18}/></button>
+              <button onClick={toggleMaster} style={{ flex:1, height:44, borderRadius:8, cursor:'pointer', border:isMastered?'1px solid #C8A84B80':'1px solid #2E2850', background:isMastered?'rgba(200,168,75,0.13)':'#161225', color:isMastered?'#C8A84B':'#6B5F4F', fontFamily:'Crimson Pro', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6, transition:'all 0.18s' }}>
+                <StarIcon s={14} f={isMastered}/>{isMastered?'Mastered':'Mark as Mastered'}
+              </button>
+              <button onClick={()=>nav(1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#9E8F75', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevR s={18}/></button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
+              <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:8 }}>What does this word mean?</div>
+              <div className="playfair" style={{ fontSize:30, fontWeight:700, color:'#F2E8D0', marginBottom:6 }}>{VOCAB[qIdx].word}</div>
+              <div style={{ color:'#C8A84B80', fontSize:12, fontFamily:'Crimson Pro', fontStyle:'italic' }}>{VOCAB[qIdx].root}</div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
+              {quizOpts.map((opt,i)=>{
+                const isRight = opt===VOCAB[qIdx].def;
+                let cls='opt-btn';
+                if(answered){ if(isRight) cls+=' ok'; else if(selected===opt) cls+=' bad'; }
+                else if(selected===opt) cls+=' sel';
+                return (
+                  <button key={i} className={cls} disabled={answered} onClick={()=>handleQuizSelect(opt)}>
+                    <span style={{ display:'inline-flex', gap:10, alignItems:'flex-start' }}>
+                      <span style={{ fontFamily:'JetBrains Mono', fontSize:11, opacity:0.4, minWidth:16, paddingTop:1, flexShrink:0 }}>{String.fromCharCode(65+i)}</span>
+                      <span>{opt}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {answered && (
+              <div style={{ background:selected===VOCAB[qIdx].def?'rgba(74,140,111,0.12)':'rgba(139,48,48,0.12)', border:`1px solid ${selected===VOCAB[qIdx].def?'#4A8C6F':'#8B3030'}`, borderRadius:9, padding:13, marginBottom:14 }}>
+                <div style={{ color:selected===VOCAB[qIdx].def?'#6ABF94':'#C25050', fontWeight:600, fontFamily:'Crimson Pro', fontSize:14, marginBottom:4 }}>
+                  {selected===VOCAB[qIdx].def?'✓ Correct!':'✗ Not quite'}
+                </div>
+                <div style={{ color:'#9E8F75', fontSize:14, lineHeight:1.55, fontFamily:'Crimson Pro' }}>
+                  <span style={{ fontStyle:'italic', color:'#C8A84B' }}>{VOCAB[qIdx].word}</span>: {VOCAB[qIdx].def}
+                </div>
+                <div style={{ color:'#6B5F4F', fontSize:13, marginTop:5, fontStyle:'italic', fontFamily:'Crimson Pro' }}>{VOCAB[qIdx].ex}</div>
+              </div>
+            )}
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>nav(-1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#9E8F75', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevL s={18}/></button>
+              <button onClick={()=>nav(1)} style={{ flex:1, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#C8A84B', cursor:'pointer', fontFamily:'Crimson Pro', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                Next Word <ChevR s={16}/>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════ GRAMMAR DRILL ══════════════════════════ */
+
+function GrammarDrill({ progress, onProgress }) {
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const correct = progress?.correct || [];
+  const wrong   = progress?.wrong   || [];
+  const q = GRAMMAR[idx];
+
+  const handleSelect = i => {
+    if (answered) return;
+    setSelected(i); setAnswered(true);
+    const ok = i===q.ans;
+    if (ok  && !correct.includes(q.id)) onProgress({ ...progress, correct:[...correct,q.id], wrong:wrong.filter(w=>w!==q.id) });
+    if (!ok && !wrong.includes(q.id))   onProgress({ ...progress, wrong:[...wrong,q.id], correct:correct.filter(c=>c!==q.id) });
+  };
+
+  const next = () => {
+    if (idx < GRAMMAR.length-1) { setIdx(i=>i+1); setSelected(null); setAnswered(false); }
+    else setDone(true);
+  };
+
+  if (done) return (
+    <>
+      <SectionHeader color="#B87A6A" supra="Grammar & Usage" title="Sentence Mechanics"/>
+      <ResultCard correct={correct.length} total={GRAMMAR.length} color="#B87A6A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/>
+    </>
+  );
+
+  return (
+    <div>
+      <SectionHeader color="#B87A6A" supra="Grammar & Usage" title="Sentence Mechanics" counter={`${idx+1}/${GRAMMAR.length}`}/>
+      <div style={{ padding:'14px' }}>
+        <ProgressBar pct={(idx/GRAMMAR.length)*100} color="#B87A6A"/>
+        <QuestionCard prompt={q.q} opts={q.opts} ans={q.ans} answered={answered} selected={selected} onSelect={handleSelect} color="#B87A6A" hint={`Question ${idx+1}`}/>
+        {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
+        {answered && <NextButton onClick={next} label={idx<GRAMMAR.length-1?'Next Question':'See Results'} color="#B87A6A"/>}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════ READING DRILL ══════════════════════════ */
+
+function ReadingDrill({ progress, onProgress }) {
+  const [pIdx, setPIdx] = useState(0);
+  const [qIdx, setQIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [view, setView] = useState('passage');
+
+  const correct = progress?.correct || [];
+  const wrong   = progress?.wrong   || [];
+  const passage = PASSAGES[pIdx];
+  const q = passage.qs[qIdx];
+
+  const handleSelect = i => {
+    if (answered) return;
+    setSelected(i); setAnswered(true);
+    const ok = i===q.ans;
+    if (ok  && !correct.includes(q.id)) onProgress({ ...progress, correct:[...correct,q.id], wrong:wrong.filter(w=>w!==q.id) });
+    if (!ok && !wrong.includes(q.id))   onProgress({ ...progress, wrong:[...wrong,q.id], correct:correct.filter(c=>c!==q.id) });
+  };
+
+  const nextQ = () => {
+    if (qIdx < passage.qs.length-1) { setQIdx(i=>i+1); setSelected(null); setAnswered(false); }
+    else {
+      setPIdx(i=>(i+1)%PASSAGES.length);
+      setQIdx(0); setSelected(null); setAnswered(false); setView('passage');
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ background:'#161225', padding:'20px 16px 16px', borderBottom:'1px solid #2E2850' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+          <div>
+            <div style={{ color:'#7A9EC8', fontSize:10, letterSpacing:'0.28em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:2 }}>Reading Comprehension</div>
+            <h2 className="playfair" style={{ fontSize:20, color:'#F2E8D0', margin:0 }}>Classical Passages</h2>
+          </div>
+          <div style={{ color:'#9E8F75', fontSize:13, fontFamily:'JetBrains Mono' }}>P{pIdx+1}·Q{qIdx+1}/{passage.qs.length}</div>
+        </div>
+        <div style={{ display:'flex', background:'#0D0A1A', borderRadius:8, padding:3, gap:3 }}>
+          {['passage','questions'].map(v=>(
+            <button key={v} onClick={()=>setView(v)} style={{ flex:1, padding:'6px 0', borderRadius:6, border:'none', cursor:'pointer', background:view===v?'#1C1730':'transparent', color:view===v?'#7A9EC8':'#6B5F4F', fontFamily:'Crimson Pro', fontSize:14, fontWeight:view===v?600:400, transition:'all 0.18s', textTransform:'capitalize', letterSpacing:'0.03em' }}>
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view==='passage' ? (
+        <div style={{ padding:'14px' }}>
+          <div style={{ marginBottom:14 }}>
+            <div className="playfair" style={{ fontSize:19, fontWeight:600, color:'#F2E8D0', marginBottom:4 }}>{passage.title}</div>
+            <div style={{ color:'#6B5F4F', fontSize:11, fontFamily:'Crimson Pro', fontStyle:'italic' }}>{passage.source}</div>
+          </div>
+          <div style={{ background:'#161225', border:'1px solid #2E2850', borderRadius:12, padding:20, color:'#D8CEBC', fontFamily:'Crimson Pro', fontSize:16, lineHeight:1.8, marginBottom:14 }}>
+            {passage.text.split('\n\n').map((p,i)=><p key={i} style={{ margin:i>0?'16px 0 0':0 }}>{p}</p>)}
+          </div>
+          <button onClick={()=>setView('questions')} style={{ width:'100%', height:46, borderRadius:8, border:'1px solid #7A9EC860', background:'rgba(122,158,200,0.12)', color:'#7A9EC8', cursor:'pointer', fontFamily:'Crimson Pro', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            Answer Questions <ChevR s={16}/>
+          </button>
+        </div>
+      ) : (
+        <div style={{ padding:'14px' }}>
+          <ProgressBar pct={(qIdx/passage.qs.length)*100} color="#7A9EC8"/>
+          <QuestionCard prompt={q.q} opts={q.opts} ans={q.ans} answered={answered} selected={selected} onSelect={handleSelect} color="#7A9EC8" hint={`Question ${qIdx+1} of ${passage.qs.length}`}/>
+          {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={()=>setView('passage')} style={{ flex:1, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#7A9EC8', cursor:'pointer', fontFamily:'Crimson Pro', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+              <ChevL s={14}/> Re-read
+            </button>
+            {answered && (
+              <button onClick={nextQ} style={{ flex:2, height:44, borderRadius:8, border:'1px solid #7A9EC860', background:'rgba(122,158,200,0.12)', color:'#7A9EC8', cursor:'pointer', fontFamily:'Crimson Pro', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                {qIdx<passage.qs.length-1?'Next Question':'Next Passage'} <ChevR s={16}/>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════ MATH DRILL ══════════════════════════ */
+
+function MathDrill({ progress, onProgress }) {
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const correct = progress?.correct || [];
+  const wrong   = progress?.wrong   || [];
+  const q = MATH[idx];
+
+  const handleSelect = i => {
+    if (answered) return;
+    setSelected(i); setAnswered(true);
+    const ok = i===q.ans;
+    if (ok  && !correct.includes(q.id)) onProgress({ ...progress, correct:[...correct,q.id], wrong:wrong.filter(w=>w!==q.id) });
+    if (!ok && !wrong.includes(q.id))   onProgress({ ...progress, wrong:[...wrong,q.id], correct:correct.filter(c=>c!==q.id) });
+  };
+
+  const next = () => {
+    if (idx < MATH.length-1) { setIdx(i=>i+1); setSelected(null); setAnswered(false); }
+    else setDone(true);
+  };
+
+  if (done) return (
+    <>
+      <SectionHeader color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice"/>
+      <ResultCard correct={correct.length} total={MATH.length} color="#8AB87A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/>
+    </>
+  );
+
+  return (
+    <div>
+      <SectionHeader color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice" counter={`${idx+1}/${MATH.length}`}/>
+      <div style={{ padding:'14px' }}>
+        <ProgressBar pct={(idx/MATH.length)*100} color="#8AB87A"/>
+
+        {/* Question box — monospace for math */}
+        <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
+          <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>Problem {idx+1}</div>
+          <div style={{ color:'#F2E8D0', fontSize:17, lineHeight:1.55, fontFamily:'Crimson Pro', fontWeight:500 }}>{q.q}</div>
+        </div>
+
+        {/* 2-column grid for answers */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+          {q.opts.map((opt,i)=>{
+            let cls='opt-btn';
+            if(answered){ if(i===q.ans) cls+=' ok'; else if(selected===i) cls+=' bad'; }
+            else if(selected===i) cls+=' sel';
+            return (
+              <button key={i} className={cls} disabled={answered} onClick={()=>handleSelect(i)} style={{ textAlign:'center', padding:'14px 8px' }}>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                  <span style={{ fontFamily:'JetBrains Mono', fontSize:10, opacity:0.38 }}>{String.fromCharCode(65+i)}</span>
+                  <span style={{ fontFamily:'JetBrains Mono', fontSize:20, fontWeight:500 }}>{opt}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
+        {answered && <NextButton onClick={next} label={idx<MATH.length-1?'Next Problem':'See Results'} color="#8AB87A"/>}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════ APP ══════════════════════════ */
+
+function App() {
+  const [tab, setTab] = useState('home');
+  const [progress, setProgress] = useState(()=>{
+    const s = gs('progress');
+    return s || { vocab:{mastered:[],seen:[]}, grammar:{correct:[],wrong:[]}, reading:{correct:[],wrong:[]}, math:{correct:[],wrong:[]} };
+  });
+
+  const save = (key, val) => {
+    const np = { ...progress, [key]:val };
+    setProgress(np); ss('progress', np);
+  };
+
+  const tabs = [
+    { id:'home',    label:'Home',    Icon:HomeIcon,   color:'#C8A84B' },
+    { id:'verbal',  label:'Verbal',  Icon:BookIcon,   color:'#C8A84B' },
+    { id:'grammar', label:'Grammar', Icon:PenIcon,    color:'#B87A6A' },
+    { id:'reading', label:'Reading', Icon:ScrollIcon, color:'#7A9EC8' },
+    { id:'math',    label:'Math',    Icon:SigmaIcon,  color:'#8AB87A' },
+  ];
+
+  return (
+    <div style={{ background:'#0D0A1A', minHeight:'100vh', fontFamily:"'Crimson Pro',Georgia,serif" }}>
+      <main style={{ paddingBottom:72, minHeight:'100vh' }}>
+        <div className="fade-up" key={tab}>
+          {tab==='home'    && <HomeScreen progress={progress} onTab={setTab}/>}
+          {tab==='verbal'  && <VocabDrill   progress={progress.vocab}   onProgress={v=>save('vocab',v)}/>}
+          {tab==='grammar' && <GrammarDrill progress={progress.grammar} onProgress={v=>save('grammar',v)}/>}
+          {tab==='reading' && <ReadingDrill progress={progress.reading} onProgress={v=>save('reading',v)}/>}
+          {tab==='math'    && <MathDrill    progress={progress.math}    onProgress={v=>save('math',v)}/>}
+        </div>
+      </main>
+
+      <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(13,10,26,0.97)', borderTop:'1px solid #2E2850', display:'flex', zIndex:100, backdropFilter:'blur(10px)', paddingBottom:'env(safe-area-inset-bottom)' }}>
+        {tabs.map(({id,label,Icon,color})=>{
+          const active = tab===id;
+          return (
+            <button key={id} className={`nav-btn${active?' active':''}`} onClick={()=>setTab(id)} style={{ color:active?color:undefined }}>
+              <Icon s={20}/><span>{label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
