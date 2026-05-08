@@ -13,800 +13,523 @@
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin:0; padding:0; background:#0D0A1A; color:#F2E8D0; }
     .playfair { font-family:'Playfair Display',Georgia,serif; }
-    .crimson  { font-family:'Crimson Pro',Georgia,serif; }
-    .mono     { font-family:'JetBrains Mono',monospace; }
-
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(12px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
     .fade-up { animation: fadeUp 0.28s ease both; }
-
-    @keyframes flip {
-      0%   { transform: rotateY(0deg); }
-      50%  { transform: rotateY(90deg); }
-      100% { transform: rotateY(0deg); }
-    }
-    .flip-anim { animation: flip 0.32s ease; }
-
-    .nav-btn {
-      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:3px; padding:8px 4px; border:none; background:transparent; cursor:pointer;
-      color:#4A3F6B; font-family:'Crimson Pro',serif; font-size:10px; letter-spacing:0.06em;
-      transition:color 0.18s;
-    }
+    .nav-btn { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border:none;background:transparent;cursor:pointer;color:#4A3F6B;font-family:'Crimson Pro',serif;font-size:10px;letter-spacing:0.06em;transition:color 0.18s; }
     .nav-btn.active { color:#C8A84B; }
-
-    .opt-btn {
-      background:#161225; border:1px solid #2E2850; border-radius:9px;
-      color:#F2E8D0; cursor:pointer; font-family:'Crimson Pro',serif; font-size:15px;
-      padding:13px 12px; text-align:left; transition:all 0.15s; line-height:1.4;
-    }
-    .opt-btn:hover:not(:disabled) { border-color:#C8A84B44; background:#1C1730; }
-    .opt-btn.sel  { border-color:#C8A84B; background:#1C1730; }
-    .opt-btn.ok   { border-color:#4A8C6F; background:rgba(74,140,111,0.12); color:#6ABF94; }
-    .opt-btn.bad  { border-color:#8B3030; background:rgba(139,48,48,0.12); color:#C25050; }
-
-    .progress-track { height:3px; background:#1E1C2E; border-radius:99px; overflow:hidden; }
-    .progress-fill  { height:100%; border-radius:99px; transition:width 0.4s ease; }
-
+    .opt-btn { background:#161225;border:1px solid #2E2850;border-radius:9px;color:#F2E8D0;cursor:pointer;font-family:'Crimson Pro',serif;font-size:15px;padding:13px 12px;text-align:left;transition:all 0.15s;line-height:1.4;width:100%; }
+    .opt-btn:hover:not(:disabled) { border-color:#C8A84B44;background:#1C1730; }
+    .opt-btn.sel { border-color:#C8A84B;background:#1C1730; }
+    .opt-btn.ok  { border-color:#4A8C6F;background:rgba(74,140,111,0.12);color:#6ABF94; }
+    .opt-btn.bad { border-color:#8B3030;background:rgba(139,48,48,0.12);color:#C25050; }
+    .progress-track { height:3px;background:#1E1C2E;border-radius:99px;overflow:hidden;margin-bottom:14px; }
+    .progress-fill  { height:100%;border-radius:99px;transition:width 0.4s ease; }
     .ring-svg { transform:rotate(-90deg); }
-
     ::-webkit-scrollbar { width:4px; }
     ::-webkit-scrollbar-track { background:#0D0A1A; }
-    ::-webkit-scrollbar-thumb { background:#2E2850; border-radius:2px; }
+    ::-webkit-scrollbar-thumb { background:#2E2850;border-radius:2px; }
   </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState } = React;
+const KEY='clt8:v3:';
+const gs=k=>{try{const v=localStorage.getItem(KEY+k);return v?JSON.parse(v):null;}catch{return null;}};
+const ss=(k,v)=>{try{localStorage.setItem(KEY+k,JSON.stringify(v));}catch{}};
 
-/* ── localStorage helpers ── */
-const KEY = 'clt8:v2:';
-const gs = k => { try { const v=localStorage.getItem(KEY+k); return v?JSON.parse(v):null; } catch{return null;} };
-const ss = (k,v) => { try { localStorage.setItem(KEY+k, JSON.stringify(v)); } catch{} };
-
-/* ══════════════════════════════════════════════════════
-   DATA
-══════════════════════════════════════════════════════ */
-
-const VOCAB = [
-  { word:'Veracious',   root:'L. verax (truthful)',          def:'Habitually speaking truth; honest.',                         ex:'The veracious witness gave the jury a clear account of events.' },
-  { word:'Magnanimous', root:'L. magnus + animus',           def:'Generous and noble in spirit, especially toward a rival.',   ex:'The magnanimous champion congratulated the runner-up warmly.' },
-  { word:'Perspicacious',root:'L. perspicax (sharp-sighted)',def:'Having a ready insight; keenly discerning.',                 ex:'A perspicacious reader notices themes others overlook.' },
-  { word:'Tenacious',   root:'L. tenax (holding fast)',      def:'Not easily stopped; persistent and stubborn.',               ex:'Her tenacious training paid off when she won the championship.' },
-  { word:'Acrimonious', root:'L. acer (sharp, bitter)',      def:'Angry and bitter in speech or manner.',                      ex:'The debate grew acrimonious when neither side would yield.' },
-  { word:'Sanguine',    root:'L. sanguis (blood)',           def:'Optimistic, especially in a difficult situation.',           ex:'Despite the setbacks, he remained sanguine about the outcome.' },
-  { word:'Mendacious',  root:'L. mendax (lying)',            def:'Not telling the truth; dishonest.',                          ex:'The mendacious salesman invented flaws in his competitor\'s goods.' },
-  { word:'Imperious',   root:'L. imperium (command)',        def:'Assuming power without justification; domineering.',         ex:'Her imperious tone made the staff reluctant to ask questions.' },
-  { word:'Loquacious',  root:'L. loqui (to speak)',          def:'Tending to talk a great deal; talkative.',                   ex:'The loquacious tour guide barely paused for breath.' },
-  { word:'Ingenuous',   root:'L. ingenuus (freeborn, frank)',def:'Innocent, naive, and without deception.',                   ex:'His ingenuous smile made it impossible to suspect him of guile.' },
-  { word:'Rectitude',   root:'L. rectus (straight)',         def:'Morally correct behavior or thinking.',                      ex:'Her rectitude never wavered, even under pressure to bend the rules.' },
-  { word:'Obdurate',    root:'L. obdurare (to harden)',      def:'Stubbornly refusing to change one\'s opinion.',              ex:'The obdurate judge refused to hear any further appeals.' },
-  { word:'Vociferous',  root:'L. vox + ferre (to carry)',   def:'Expressing opinions loudly and forcefully.',                 ex:'Vociferous protesters gathered outside the capitol building.' },
-  { word:'Inveterate',  root:'L. inveterare (to age)',       def:'Having a habit or activity so firmly established it is unlikely to change.', ex:'An inveterate traveler, she had visited fifty countries by age thirty.' },
-  { word:'Pellucid',    root:'L. pellucidus (transparent)',  def:'Translucently clear; easily understood.',                   ex:'The author\'s pellucid prose made even complex ideas accessible.' },
-  { word:'Equivocate',  root:'L. aequus + vox (equal voice)',def:'Use ambiguous language so as to conceal the truth.',        ex:'The politician equivocated rather than answer the question directly.' },
-  { word:'Propitious',  root:'L. propitius (favorable)',     def:'Giving or indicating a good chance of success; favorable.',  ex:'The calm weather seemed propitious for the voyage.' },
-  { word:'Truculent',   root:'L. truculentus (fierce)',      def:'Eager or quick to argue or fight; aggressively defiant.',    ex:'The truculent student challenged every point the teacher made.' },
-  { word:'Sagacious',   root:'L. sagax (wise)',              def:'Having or showing keen mental discernment; wise.',           ex:'The sagacious elder\'s advice proved correct years later.' },
-  { word:'Perfidious',  root:'L. perfidia (treachery)',      def:'Guilty of betrayal; treacherous.',                           ex:'The perfidious spy passed state secrets to the enemy.' },
+/* ─── DATA ─── */
+const VOCAB=[
+  {word:'Anfractuous',  root:'L. anfractus (bending)',        def:'Winding; circuitous; full of twists.',                              ex:'The anfractuous path through the argument confused every reader.'},
+  {word:'Apothegm',     root:'Gk. apophthegma (terse saying)',def:'A short, pithy, instructive maxim.',                               ex:'His grandfather\'s apothegms proved wiser than any long lecture.'},
+  {word:'Cacoethes',    root:'Gk. kakoēthes (ill habit)',     def:'An irresistible compulsion to do something inadvisable.',          ex:'Her cacoethes for blunt speech cost her several friendships.'},
+  {word:'Captious',     root:'L. captiosus (deceptive)',      def:'Tending to find trivial faults; raising petty objections.',        ex:'The captious editor marked every comma while ignoring the plot.'},
+  {word:'Contumacious', root:'L. contumax (stubborn)',        def:'Stubbornly disobedient; rebelliously resistant to authority.',     ex:'The contumacious defendant refused to rise when the judge entered.'},
+  {word:'Desultory',    root:'L. desultor (circus rider)',    def:'Lacking plan or purpose; disconnected; randomly jumping topics.',  ex:'His desultory reading left him with fragments of knowledge but no depth.'},
+  {word:'Dilatory',     root:'L. dilatorius (delaying)',      def:'Slow to act; tending to cause or produce delay.',                  ex:'The dilatory contractor kept postponing repairs for months.'},
+  {word:'Encomium',     root:'Gk. enkōmion (festive song)',   def:'A formal expression of warm praise; a tribute.',                  ex:'The retiring professor received a heartfelt encomium from her students.'},
+  {word:'Expiate',      root:'L. expiare (to atone)',         def:'To make amends for wrongdoing; to atone for guilt or sin.',       ex:'He fasted to expiate what he believed was a moral failure.'},
+  {word:'Fungible',     root:'L. fungi (to serve/perform)',   def:'Interchangeable; replaceable by another identical item.',         ex:'Commodities such as wheat are fungible — one bushel equals another.'},
+  {word:'Liminal',      root:'L. limen (threshold)',          def:'Relating to a transitional or threshold stage between two states.',ex:'Adolescence is often described as a liminal period of identity.'},
+  {word:'Nugatory',     root:'L. nugatorius (trifling)',      def:'Of no value or importance; useless; futile.',                     ex:'The committee\'s vague report proved entirely nugatory.'},
+  {word:'Palimpsest',   root:'Gk. palimpsēstos (scraped again)',def:'A manuscript bearing erased earlier writing; anything showing traces of an earlier form.',ex:'The city\'s streets are a palimpsest of every era of its history.'},
+  {word:'Tendentious',  root:'Med. L. tendentia (tendency)',  def:'Promoting a particular cause or point of view; biased.',          ex:'The documentary was compelling but clearly tendentious in its editing.'},
+  {word:'Prolix',       root:'L. prolixus (poured forth)',    def:'Using far too many words; tediously wordy.',                      ex:'The prolix senator rarely answered a question in fewer than twenty minutes.'},
+  {word:'Recondite',    root:'L. reconditus (hidden away)',   def:'Dealing with obscure subject matter; not widely known.',          ex:'His recondite knowledge of Byzantine coinage impressed even specialists.'},
+  {word:'Tergiversate', root:'L. tergum+vertere (turn back)',def:'To make evasive or conflicting statements; to equivocate.',      ex:'When pressed on the scandal, the politician began to tergiversate.'},
+  {word:'Velleity',     root:'Med. L. velleitas (slight wish)',def:'A desire too faint to motivate action; the weakest degree of volition.',ex:'His velleity to learn Italian never progressed beyond buying a dictionary.'},
+  {word:'Bathetic',     root:'Gk. bathos (depth)',            def:'Producing an anticlimax; ludicrously sentimental.',              ex:'The film\'s powerful climax was undermined by its bathetic final line.'},
+  {word:'Comminatory',  root:'L. comminari (to threaten)',    def:'Threatening divine vengeance or severe punishment.',              ex:'The prophet\'s comminatory speeches drove the crowd to repentance.'},
 ];
 
-const GRAMMAR = [
-  {
-    id:'g01', q:'Choose the sentence with correct subject-verb agreement.',
-    opts:['Neither of the boys have finished their essay.','Neither of the boys has finished his essay.','Neither of the boys have finished his essay.','Neither of the boys has finished their essay.'],
-    ans:1, exp:'"Neither" is singular, requiring "has." The pronoun "his" agrees with the singular antecedent.'
-  },
-  {
-    id:'g02', q:'Which sentence uses a comma correctly?',
-    opts:['She opened the door, and stepped inside.','She opened the door and stepped inside.','She opened, the door and stepped inside.','She opened the door, and, stepped inside.'],
-    ans:1, exp:'Do not use a comma before "and" when it joins only two verbs (no subject repeated). A comma before "and" is correct only when joining two independent clauses.'
-  },
-  {
-    id:'g03', q:'Identify the sentence that avoids a dangling modifier.',
-    opts:['Running to the bus, my backpack fell off.','Running to the bus, I dropped my backpack.','Running to the bus, the bell rang.','Running to the bus, the rain soaked me.'],
-    ans:1, exp:'The participial phrase "Running to the bus" must modify the sentence\'s subject. Only choice B places "I" (the runner) as subject.'
-  },
-  {
-    id:'g04', q:'Which sentence uses the correct pronoun case?',
-    opts:['Between you and I, the plan seems risky.','The winner was her, not him.','They invited Marcus and me to the ceremony.','Him and his sister arrived early.'],
-    ans:2, exp:'"Me" is the correct object of "invited." "Between you and me" (not I), "The winner was she" (not her), and "He and his sister" (not Him) are also required.'
-  },
-  {
-    id:'g05', q:'Select the correctly punctuated sentence.',
-    opts:['The book which I lost was due yesterday.','The book, which I lost, was due yesterday.','The book which, I lost, was due yesterday.','The book which I lost, was due yesterday.'],
-    ans:1, exp:'"Which I lost" is a nonrestrictive (nonessential) clause and must be set off with commas on both sides.'
-  },
-  {
-    id:'g06', q:'Which option corrects the faulty parallelism?',
-    opts:['She likes hiking, to swim, and running.','She likes hiking, swimming, and to run.','She likes to hike, swim, and run.','She likes hiking, swimming, and the ability to run.'],
-    ans:2, exp:'Parallel structure requires the same grammatical form for each item in a series: "to hike, swim, and run" (all infinitives).'
-  },
-  {
-    id:'g07', q:'Choose the sentence that correctly uses a semicolon.',
-    opts:['I studied hard; and passed the test.','I studied hard; however, I failed anyway.','I studied; hard, and passed the test.','I studied hard; but I still failed.'],
-    ans:1, exp:'A semicolon followed by a conjunctive adverb ("however") and a comma is correct. Do not use a semicolon before coordinating conjunctions (and, but).'
-  },
-  {
-    id:'g08', q:'Which sentence avoids a run-on?',
-    opts:['The storm arrived quickly it knocked out the power.','The storm arrived quickly, it knocked out the power.','The storm arrived quickly; it knocked out the power.','The storm arrived quickly and it knocked out the power.'],
-    ans:2, exp:'Two independent clauses must be joined with a semicolon, a period, or a coordinating conjunction with a comma. A semicolon alone (option C) is correct.'
-  },
-  {
-    id:'g09', q:'Identify the sentence in the active voice.',
-    opts:['The poem was recited by the student.','The trophy was awarded to the team.','The student recited the poem.','A mistake was made by the manager.'],
-    ans:2, exp:'Active voice: subject (student) performs the action (recited). Passive voice inverts this: "was recited by" places the object first.'
-  },
-  {
-    id:'g10', q:'Which sentence uses an apostrophe correctly?',
-    opts:["The childrens' toys were scattered outside.","The children's toys were scattered outside.","The childrens toys were scattered outside.","The children\'s' toys were scattered outside."],
-    ans:1, exp:'"Children" is an irregular plural (not formed by adding -s), so the possessive is "children\'s" — apostrophe before the s.'
-  },
-  {
-    id:'g11', q:'Select the sentence that uses "fewer" and "less" correctly.',
-    opts:['I have less problems than you do.','There are fewer water in the jug today.','He has fewer worries and less stress.','She drinks fewer milk than her brother.'],
-    ans:2, exp:'"Fewer" applies to countable nouns (worries); "less" applies to uncountable/mass nouns (stress). This is the only sentence that applies both correctly.'
-  },
-  {
-    id:'g12', q:'Which version correctly positions the only modifier?',
-    opts:['I only eat vegetables on Tuesdays.','Only I eat vegetables on Tuesdays.','I eat only vegetables on Tuesdays.','I eat vegetables on only Tuesdays.'],
-    ans:2, exp:'The modifier "only" should be placed directly before the word it modifies. "I eat only vegetables" means vegetables alone (not other foods) — the likely intended meaning.'
-  },
-  {
-    id:'g13', q:'Choose the sentence with a correctly placed relative clause.',
-    opts:['The dog that bit the mail carrier has been trained.','The dog, that bit the mail carrier, has been trained.','The dog has been trained, that bit the mail carrier.','The dog has been trained that bit the mail carrier.'],
-    ans:0, exp:'"That" introduces a restrictive (essential) clause — no commas. It identifies which dog. "Which" would need commas; "that" does not.'
-  },
-  {
-    id:'g14', q:'Identify the sentence that avoids wordiness.',
-    opts:['Due to the fact that it was raining, we stayed in.','In view of the fact that it rained, we stayed in.','Because it rained, we stayed in.','Owing to the reason of rain, we stayed in.'],
-    ans:2, exp:'"Because" replaces the wordy phrases "due to the fact that" or "in view of the fact that" concisely and correctly.'
-  },
-  {
-    id:'g15', q:'Which sentence uses a colon correctly?',
-    opts:['She bought: apples, oranges, and pears.','The rule is simple: never give up.','He remembered: that the test was tomorrow.','My favorite subjects are: math and history.'],
-    ans:1, exp:'A colon follows a complete independent clause and introduces what comes next. Do not use a colon after a verb or after "are" if the list follows naturally.'
-  },
+const GRAMMAR=[
+  {id:'g01',q:'Which sentence correctly uses the subjunctive mood?',
+   opts:['If he was the president, policy would change overnight.','If he were the president, policy would change overnight.','If he is the president, policy would change overnight.','If he had been the president, policy would changed overnight.'],
+   ans:1,exp:'The subjunctive is required in "if" clauses expressing conditions contrary to fact. "Were" is the correct subjunctive form for all subjects. "Was" signals the indicative mood, which describes real or likely situations, not hypotheticals.'},
+  {id:'g02',q:'Choose the sentence that uses "who" or "whom" correctly.',
+   opts:['Whom do you think will win the award?','Give the medal to whomever finishes first.','She is the attorney whom the court appointed.','Whom shall we say is responsible?'],
+   ans:2,exp:'"Whom the court appointed" is correct — "whom" is the object of "appointed." In (A) the pronoun is subject of "will win," requiring "who." In (B) "whoever" is the subject of "finishes," so the nominative is needed. In (D) "who" is the subject of "is responsible."'},
+  {id:'g03',q:'Which sentence correctly handles a collective noun in American English?',
+   opts:['The jury have reached their verdict.','The jury has reached its verdict.','The jury have reached its verdict.','The jury has reached their verdict.'],
+   ans:1,exp:'In American English, collective nouns (jury, team, committee) take singular verbs and singular pronouns when acting as a unified body: "has reached its verdict." British English permits the plural verb, but American usage treats the collective as singular.'},
+  {id:'g04',q:'Identify the sentence with correct parallel structure using correlative conjunctions.',
+   opts:['She is not only intelligent but has great creativity too.','Not only did she study hard, but she also practiced daily.','She is not only intelligent but also has great creativity.','She not only is intelligent but creative also.'],
+   ans:1,exp:'"Not only...but also" must pair grammatically parallel elements. In (B), "did she study hard" parallels "she also practiced daily" — both are independent clauses. Option (A) pairs an adjective with a verb phrase. Option (C) pairs "is intelligent" with "has creativity" — two different verb types.'},
+  {id:'g05',q:'Which sentence correctly uses "as" rather than "like" before a clause?',
+   opts:['He ran the business like his father had before him.','He ran the business as his father had before him.','Nobody cooks like she does.','It tastes exactly like I remembered it would.'],
+   ans:1,exp:'"As" is correct before a clause (subject + verb): "as his father had [before him]." "Like" is correct before a noun or pronoun without a verb. Options (A), (C), and (D) place "like" before a clause with a verb, which is informal but grammatically incorrect in formal writing.'},
+  {id:'g06',q:'Which sentence correctly uses an absolute phrase?',
+   opts:['The storm finished, we began to assess the damage.','The storm having finished, we began to assess the damage.','The storm was finished, we began to assess the damage.','Having finished the storm, we began to assess the damage.'],
+   ans:1,exp:'An absolute phrase (noun + participle) modifies the entire main clause and is set off by a comma without a conjunction: "The storm having finished." Options (A) and (C) are comma splices. Option (D) creates a dangling modifier — "we" did not finish the storm.'},
+  {id:'g07',q:'Which sentence correctly uses an adjective after a linking verb?',
+   opts:['The bread tastes freshly out of the oven.','She feels badly about the mistake she made.','The music sounded beautifully throughout the hall.','The roses in the garden smell sweet.'],
+   ans:3,exp:'Linking verbs (taste, feel, sound, smell, seem, appear) take predicate adjectives: "smell sweet." "Freshly," "badly," and "beautifully" are adverbs and cannot describe the subject\'s quality. "Feels bad" is correct for emotional states; "feels badly" would mean a defective sense of touch.'},
+  {id:'g08',q:'Which sentence correctly uses the past perfect tense?',
+   opts:['By the time Maria arrived, everyone left already.','Everyone left before Maria had arrived already.','By the time Maria arrived, everyone had already left.','Maria arrived before everyone had already left.'],
+   ans:2,exp:'The past perfect ("had left") marks an action completed before another past action ("arrived"). Option (C) correctly applies the past perfect to the earlier event. Option (A) uses simple past for both, losing the sense of sequence. Option (B) misapplies it to the later action.'},
+  {id:'g09',q:'Which sentence uses "comprise" correctly?',
+   opts:['The anthology is comprised of twenty-three poems.','The anthology comprises twenty-three poems.','Twenty-three poems comprise of the anthology.','The anthology is comprising twenty-three poems.'],
+   ans:1,exp:'"Comprise" means "to include" or "to consist of" — the whole comprises its parts: "The anthology comprises poems." "Comprised of" (A) is widely used but technically incorrect; "composed of" is the correct alternative. "Comprise of" (C) is never correct.'},
+  {id:'g10',q:'Which sentence uses "lay" or "lie" correctly?',
+   opts:['She laid down for a nap after reading.','He lay the documents carefully on the table.','The cat has lain in the same spot all morning.','Please lie the books on the shelf for me.'],
+   ans:2,exp:'"Lie" (to recline) is intransitive: lie→lay→lain. "Lay" (to place) is transitive: lay→laid→laid. (A) "laid down" should be "lay down" (past of intransitive lie). (B) "lay the documents" should be "laid" (past of transitive lay). (D) "lie the books" should be "lay the books." (C) "has lain" — correct past participle of intransitive lie.'},
+  {id:'g11',q:'Which sentence is correctly punctuated as an indirect question?',
+   opts:['She asked whether the letter had arrived?','She asked, "Whether the letter had arrived."','She asked whether the letter had arrived.','She asked — "whether the letter had arrived?"'],
+   ans:2,exp:'An indirect question reports speech as a declarative statement and ends with a period, not a question mark. The question mark is reserved for direct questions in quotation marks: She asked, "Has the letter arrived?"'},
+  {id:'g12',q:'Which sentence contains an error in the use of "affect" or "effect"?',
+   opts:['The medication had no noticeable effect on her symptoms.','Cold weather can affect your mood significantly.','The committee voted to effect sweeping changes in policy.','His poor diet began to effect his athletic performance.'],
+   ans:3,exp:'Option (D) misuses "effect" where "affect" (verb, to influence) is needed. "Effect" as a verb means "to bring about" — as in "effect a change." Options (A–C) are all correct: "effect" as noun, "affect" as verb, and "effect" as a verb meaning "to produce/achieve."'},
+  {id:'g13',q:'Which sentence is correct regarding "who" versus "that" for people?',
+   opts:['The student that scored highest received the medal.','The students who studied hardest succeeded.','The doctor who treated him was highly experienced.','Both B and C are correct.'],
+   ans:3,exp:'In formal writing, "who" is the preferred relative pronoun for people, not "that." Both (B) and (C) correctly use "who" for human antecedents. Option (A) uses "that" for a person, which is considered informal or incorrect in formal and literary contexts.'},
+  {id:'g14',q:'Which sentence incorrectly uses a hyphen with a compound modifier?',
+   opts:['He delivered a well-prepared argument to the court.','She is a highly-skilled surgeon with decades of experience.','They signed a twenty-year lease on the building.','The well-planned event proceeded without any problems.'],
+   ans:1,exp:'Do not hyphenate compound modifiers beginning with an adverb ending in -ly: "highly skilled surgeon" (no hyphen). The -ly signals an adverb, making the relationship clear without a hyphen. Contrast: "well-prepared" requires a hyphen because "well" can be an adjective or adverb, creating potential ambiguity.'},
+  {id:'g15',q:'Which sentence has a clear, unambiguous pronoun reference?',
+   opts:['When Maria called Julia, she sounded upset.','After the students read the essays, they revised them.','The president told the senator that he had made an error.','The boy kicked the ball against the wall until it cracked.'],
+   ans:3,exp:'In (D), "it" unambiguously refers to "the wall" — balls do not typically crack against walls. Options (A), (B), and (C) each contain a pronoun that could refer to either of two nouns, creating dangerous ambiguity about who or what is meant.'},
 ];
 
-const PASSAGES = [
-  {
-    id:'p01',
-    title:'From Lincoln\'s Second Inaugural Address (1865)',
-    text:`With malice toward none, with charity for all, with firmness in the right as God gives us to see the right, let us strive on to finish the work we are in, to bind up the nation's wounds, to care for him who shall have borne the battle and for his widow and his orphan, to do all which may achieve and cherish a just and lasting peace among ourselves and with all nations.
+const PASSAGES=[
+  {id:'p01',title:'Edmund Burke, Reflections on the Revolution in France (1790)',
+   text:`From Magna Carta to the Declaration of Right, it has been the uniform policy of our constitution to claim and assert our liberties as an entailed inheritance derived to us from our forefathers, and to be transmitted to our posterity as an estate specially belonging to the people of this kingdom, without any reference whatever to any more general or prior right.
 
-    Neither party expected for the war the magnitude or the duration which it has already attained. Each looked for an easier triumph, and a result less fundamental and astounding. Both read the same Bible and pray to the same God, and each invokes His aid against the other.`,
-    qs:[
-      { q:'What does Lincoln call for in the opening lines?',
-        opts:['Punishment of the South','Reconciliation and charity toward all','Continued military action','Economic reparations'],
-        ans:1, exp:'Lincoln explicitly calls for "malice toward none" and "charity for all," emphasizing reconciliation.' },
-      { q:'The phrase "bind up the nation\'s wounds" is an example of:',
-        opts:['Simile','Alliteration','Metaphor','Onomatopoeia'],
-        ans:2, exp:'This is a metaphor: the nation is compared to a wounded person needing healing, without using "like" or "as."' },
-      { q:'According to Lincoln, how did each side view the coming war?',
-        opts:['Both expected a long, costly conflict.','Each expected an easy and quick victory.','Both refused to fight.','Each expected the other to surrender first.'],
-        ans:1, exp:'Lincoln writes that "each looked for an easier triumph," indicating both sides underestimated the war\'s length and cost.' },
-    ]
-  },
-  {
-    id:'p02',
-    title:'From Charles Dickens, A Tale of Two Cities (1859)',
-    text:`It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way.
+By a constitutional policy, working after the pattern of nature, we receive, we hold, we transmit our government and our privileges in the same manner in which we enjoy and transmit our property and our lives. The institutions of policy, the goods of fortune, the gifts of providence are handed down to us, and from us, in the same course and order.`,
+   qs:[
+     {q:'Burke compares English liberties to:',
+      opts:['A revolutionary decree issued by the people','An inherited family estate passed through generations','A democratic contract renewed by each generation','A gift from foreign nations'],
+      ans:1,exp:'Burke repeatedly uses the language of inheritance and estate — "entailed inheritance," "transmitted to our posterity," "estate specially belonging" — to argue that liberty is held like property, passed from generation to generation rather than newly invented.'},
+     {q:'The word "entailed" in Burke\'s usage most nearly means:',
+      opts:['Described in extensive detail','Restricted in inheritance to a specific line of heirs','Earned through political struggle','Granted by royal decree alone'],
+      ans:1,exp:'An "entail" in property law restricts an estate so it passes down a specific family line and cannot be sold. Burke uses this legal term to argue that liberty is similarly inalienable, heritable, and not subject to the whims of any single generation.'},
+     {q:'Burke\'s argument implies that liberty is best preserved by:',
+      opts:['Constant reform and revision in each generation','Revolutionary overthrow of corrupt institutions','Continuity with historical precedent and inheritance','Universal abstract declarations of natural rights'],
+      ans:2,exp:'Burke\'s central theme is that English freedoms derive their strength from being handed down through history, not invented from abstract principles. Continuity and inheritance — not revolution — are his prescription for preserving liberty.'},
+   ]},
+  {id:'p02',title:'John Milton, Areopagitica (1644)',
+   text:`And though all the winds of doctrine were let loose to play upon the earth, so Truth be in the field, we do injuriously, by licensing and prohibiting, to misdoubt her strength. Let her and Falsehood grapple; who ever knew Truth put to the worse, in a free and open encounter? Her confuting is the best and surest suppressing.
 
-    There were a king with a large jaw and a queen with a plain face, on the throne of England; there were a king with a large jaw and a queen with a fair face, on the throne of France.`,
-    qs:[
-      { q:'The repeated phrase "it was the _____ of _____" is an example of:',
-        opts:['Anaphora','Hyperbole','Personification','Irony'],
-        ans:0, exp:'Anaphora is the repetition of a phrase at the beginning of successive clauses. Dickens uses this throughout the opening paragraph.' },
-      { q:'What literary device is used in "the best of times...the worst of times"?',
-        opts:['Alliteration','Antithesis','Euphemism','Understatement'],
-        ans:1, exp:'Antithesis places contrasting ideas in parallel structure to highlight their opposition — "best/worst," "wisdom/foolishness," "Light/Darkness."' },
-      { q:'The passage suggests that the era described is characterized by:',
-        opts:['Stability and progress','Extreme contradiction and paradox','Widespread peace','Scientific advancement'],
-        ans:1, exp:'The entire opening is built on paradox: every positive statement is immediately countered by its opposite, suggesting an age of extreme contradiction.' },
-    ]
-  },
-  {
-    id:'p03',
-    title:'From Plato, The Allegory of the Cave (adapted)',
-    text:`Imagine prisoners who have been chained since childhood inside an underground cave. They are bound so that they can only look at the wall in front of them. Behind them burns a fire, and between the fire and the prisoners, other people carry objects whose shadows are cast onto the wall. The prisoners see only these shadows and have no knowledge of the real objects — nor of the fire, nor of the world beyond. To them, the shadows are reality itself.
+For who knows not that Truth is strong, next to the Almighty? She needs no policies, nor stratagems, nor licensings to make her victorious; those are the shifts and the defences that Error uses against her power. Give her but room, and do not bind her when she sleeps.`,
+   qs:[
+     {q:'Milton\'s central argument is that Truth:',
+      opts:['Must be protected from falsehood by government licensing','Will prevail over falsehood if given freedom to compete openly','Is too fragile to survive unrestricted public debate','Requires the active suppression of dissenting opinion'],
+      ans:1,exp:'Milton argues that Truth does not need censorship ("licensing and prohibiting") to survive. In free and open encounter with falsehood, Truth will always win. Censorship therefore insults Truth by implying she cannot defend herself without help.'},
+     {q:'The phrase "let her and Falsehood grapple" personifies Truth and Falsehood as:',
+      opts:['Biblical figures from scripture','Political candidates in an election','Opponents in a physical contest or wrestling match','Scientific hypotheses under laboratory examination'],
+      ans:2,exp:'"Grapple" is a wrestling term. Milton personifies Truth and Falsehood as combatants to argue that the competition of ideas should be fought openly. Truth, he implies, always wins in a fair fight — so censorship only helps Error, not Truth.'},
+     {q:'Milton identifies "policies," "stratagems," and "licensings" as tools used by:',
+      opts:['Truth, to protect herself from Falsehood','Falsehood and Error, in their fight against Truth','The government, for the legitimate protection of citizens','Scholars, to advance legitimate knowledge'],
+      ans:1,exp:'Milton writes these are "the shifts and the defences that Error uses against her power." This is a powerful rhetorical reversal: censorship, presented as protecting truth, is actually the weapon of falsehood. Truth needs none of it.'},
+   ]},
+  {id:'p03',title:'Alexis de Tocqueville, Democracy in America (1840)',
+   text:`When the inhabitant of a democratic country compares himself individually with all those about him, he feels with pride that he is the equal of any of them; but when he comes to survey the totality of his fellows and to place himself in contrast with so huge a body, he is instantly overwhelmed by the sense of his own insignificance and weakness.
 
-    Now suppose one prisoner is released and compelled to stand up and look at the fire. At first the light is painful, and he can barely see. But gradually he grows accustomed to the light, and then, turning, sees the actual objects that made the shadows. Finally he is led out of the cave into the sunlight, where he sees the world as it truly is.`,
-    qs:[
-      { q:'In Plato\'s allegory, what do the shadows on the wall represent?',
-        opts:['Divine truth','False appearances and illusions','Historical records','Scientific observations'],
-        ans:1, exp:'The shadows symbolize the world as perceived through the senses — incomplete and misleading, not genuine reality.' },
-      { q:'The prisoner\'s journey from the cave into sunlight is best understood as:',
-        opts:['Physical escape from prison','The path from ignorance to philosophical enlightenment','A lesson in astronomy','An argument against education'],
-        ans:1, exp:'Plato uses the journey as an allegory for the philosopher\'s ascent from the world of appearances to the world of true knowledge (the Forms).' },
-      { q:'Why is the light initially painful for the freed prisoner?',
-        opts:['He is physically blind.','He has never seen light and cannot adjust immediately.','The fire is too close to him.','He does not want to leave the cave.'],
-        ans:1, exp:'Plato uses this to show that truth and knowledge can be disorienting at first — those accustomed to ignorance struggle when confronted with reality.' },
-    ]
-  },
-  {
-    id:'p04',
-    title:'From Francis Bacon, Of Studies (1625)',
-    text:`Studies serve for delight, for ornament, and for ability. Their chief use for delight is in privateness and retiring; for ornament, is in discourse; and for ability, is in the judgment and disposition of business. For expert men can execute, and perhaps judge of particulars, one by one; but the general counsels, and the plots and marshalling of affairs, come best from those that are learned.
+The same equality that renders him independent of each of his fellow-citizens taken severally, exposes him alone and unprotected to the influence of the greater number. The public, therefore, among a democratic people, has a singular power: it does not persuade men to its beliefs, but it imposes them and makes them permeate the thinking of everyone by a kind of enormous pressure of the mind of all upon the intelligence of each.`,
+   qs:[
+     {q:'Tocqueville describes a paradox in which democratic equality makes the individual feel:',
+      opts:['Powerful against the collective, but weak against each person','Equal to each person, yet insignificant and overwhelmed before the mass','Uniformly powerful in all social and political contexts','Protected from tyranny by the support of the majority'],
+      ans:1,exp:'Tocqueville\'s paradox: equality with each individual produces pride, but the sheer size of the collective produces crushing insignificance. The same equality that liberates the individual from each neighbor exposes him to the overwhelming force of all neighbors combined.'},
+     {q:'The word "severally" as used here most nearly means:',
+      opts:['Harshly or with great severity','Individually; one by one; separately','As a group; collectively','In enormous or uncountable numbers'],
+      ans:1,exp:'"Severally" is a legal and formal term meaning "separately" or "individually." "Independent of each fellow-citizen taken severally" means independent of each one considered alone — which paradoxically leaves him defenseless against all of them acting together.'},
+     {q:'According to Tocqueville, the public\'s power in a democracy is most accurately described as:',
+      opts:['Violent and ultimately revolutionary in nature','Formally imposed through law and government decree','A psychological pressure that permeates thought without argument','Dependent primarily on the control of economic resources'],
+      ans:2,exp:'Tocqueville distinguishes persuasion from imposition. Democratic public opinion does not argue its way into the individual mind — it overwhelms through sheer collective pressure: "enormous pressure of the mind of all upon the intelligence of each." This is his famous theory of the tyranny of the majority.'},
+   ]},
+  {id:'p04',title:'Francis Bacon, Of Truth (1625)',
+   text:`What is Truth? said jesting Pilate; and would not stay for an answer. Certainly there be that delight in giddiness, and count it a bondage to fix a belief; affecting free-thinking as a humor; not caring for good-will, but only for the ease of spirit that comes from license.
 
-    To spend too much time in studies is sloth; to use them too much for ornament, is affectation; to make judgment wholly by their rules, is the humor of a scholar. They perfect nature, and are perfected by experience; for natural abilities are like natural plants, that need pruning by study.`,
-    qs:[
-      { q:'According to Bacon, what is the primary use of study "for ornament"?',
-        opts:['Private reflection','Conversation and discourse','Business decisions','Academic scholarship'],
-        ans:1, exp:'Bacon writes that ornament is in "discourse" — using learning to enrich one\'s speech and social interaction.' },
-      { q:'Bacon compares natural abilities to plants. This comparison is a:',
-        opts:['Simile','Metaphor','Allusion','Personification'],
-        ans:0, exp:'"Natural abilities are like natural plants" — the word "like" signals a simile, an explicit comparison between two unlike things.' },
-      { q:'Bacon warns against spending too much time in studies, calling it:',
-        opts:['Affectation','Sloth','Pride','Vanity'],
-        ans:1, exp:'Bacon writes directly: "To spend too much time in studies is sloth." Each excess has its own label in his scheme.' },
-    ]
-  },
+But it is not only the difficulty and labor which men take in finding out of truth; nor again that, when it is found, it imposeth upon men's thoughts; that doth bring lies in favor. But a natural though corrupt love of the lie itself. One of the later school of the Grecians examineth the matter, and is at a stand to think what should be in it, that men should love lies; where neither they make for pleasure, as with poets, nor for advantage, as with the merchant; but for the lie's sake.`,
+   qs:[
+     {q:'The allusion to "jesting Pilate" characterizes some people\'s approach to truth as:',
+      opts:['Earnest and philosophically rigorous','Frivolous, dismissive, and unwilling to seek an answer','Scientifically careful but ultimately mistaken','Politically calculated and self-serving'],
+      ans:1,exp:'Pilate\'s question "What is truth?" is delivered as a jest — he asks but will not wait for an answer. Bacon uses this to identify a class of people who treat the question of truth as a game rather than a serious inquiry, delighting in the instability of never committing to a belief.'},
+     {q:'The word "affecting" as used in the passage most nearly means:',
+      opts:['Being genuinely and emotionally moved by something','Pretending to have; adopting artificially as a fashionable pose','Having a real influence or effect upon something','Feeling strong dislike or opposition toward something'],
+      ans:1,exp:'"Affecting free-thinking as a humor" means pretending to be a free-thinker as a fashionable affectation — not out of genuine philosophical commitment. This is the older meaning of "affect": to assume or feign a quality one does not actually possess.'},
+     {q:'Bacon argues that the deepest reason men prefer lies is:',
+      opts:['The difficulty of locating and identifying truth','The burden that truth imposes upon thought and conscience','A natural, corrupt love of falsehood for its own sake','The practical advantage that lies provide in commerce'],
+      ans:2,exp:'Bacon builds his argument carefully: it is not merely that truth is hard to find, nor that it is burdensome — these would be excuses. The real culprit is deeper: "a natural though corrupt love of the lie itself," loving falsehood even when it brings no pleasure or practical benefit.'},
+   ]},
 ];
 
-const MATH = [
-  { id:'m01', q:'If 3x − 7 = 14, what is the value of x?', opts:['5','7','9','21'], ans:1,
-    exp:'Add 7 to both sides: 3x = 21. Divide by 3: x = 7.' },
-  { id:'m02', q:'A rectangle has length 12 cm and width 7 cm. What is its area?', opts:['38 cm²','84 cm²','76 cm²','19 cm²'], ans:1,
-    exp:'Area = length × width = 12 × 7 = 84 cm².' },
-  { id:'m03', q:'What is 15% of 240?', opts:['24','36','48','60'], ans:1,
-    exp:'15% of 240 = 0.15 × 240 = 36.' },
-  { id:'m04', q:'Simplify: (−3)² + √25', opts:['−4','14','4','16'], ans:1,
-    exp:'(−3)² = 9. √25 = 5. 9 + 5 = 14.' },
-  { id:'m05', q:'A train travels 180 miles in 3 hours. What is its average speed?', opts:['45 mph','54 mph','60 mph','90 mph'], ans:2,
-    exp:'Speed = Distance ÷ Time = 180 ÷ 3 = 60 mph.' },
-  { id:'m06', q:'If the ratio of cats to dogs is 3:5, and there are 40 animals total, how many are cats?', opts:['8','12','15','24'], ans:2,
-    exp:'Total parts = 3 + 5 = 8. Cats = (3/8) × 40 = 15.' },
-  { id:'m07', q:'What is the perimeter of a triangle with sides 9, 12, and 15?', opts:['36','45','54','108'], ans:0,
-    exp:'Perimeter = 9 + 12 + 15 = 36. (Note: this is also a right triangle — 9² + 12² = 15².)'  },
-  { id:'m08', q:'Solve for y: 2y + 5 = 3y − 4', opts:['1','9','−9','3'], ans:1,
-    exp:'Subtract 2y from both sides: 5 = y − 4. Add 4: y = 9.' },
-  { id:'m09', q:'A store marks up a $40 item by 25%. What is the new price?', opts:['$45','$48','$50','$55'], ans:2,
-    exp:'Markup = 25% of $40 = $10. New price = $40 + $10 = $50.' },
-  { id:'m10', q:'What is the mean of 8, 13, 7, 12, 10?', opts:['9','10','11','12'], ans:1,
-    exp:'Sum = 8 + 13 + 7 + 12 + 10 = 50. Mean = 50 ÷ 5 = 10.' },
-  { id:'m11', q:'A circle has radius 6. What is its area? (Use π ≈ 3.14)', opts:['18.84','37.68','113.04','56.52'], ans:2,
-    exp:'Area = πr² = 3.14 × 36 = 113.04.' },
-  { id:'m12', q:'If f(x) = 2x² − 3, what is f(−2)?', opts:['−11','5','−5','11'], ans:1,
-    exp:'f(−2) = 2(−2)² − 3 = 2(4) − 3 = 8 − 3 = 5.' },
-  { id:'m13', q:'Two supplementary angles have measures (2x + 10)° and (3x − 20)°. Find x.', opts:['30','34','38','42'], ans:1,
-    exp:'Supplementary: sum = 180°. (2x+10)+(3x−20)=180 → 5x−10=180 → 5x=190 → x=38.' },
-  { id:'m14', q:'What is the slope of the line passing through (2, 5) and (6, 13)?', opts:['2','3','4','½'], ans:0,
-    exp:'Slope m = (y₂−y₁)/(x₂−x₁) = (13−5)/(6−2) = 8/4 = 2.' },
-  { id:'m15', q:'A number is increased by 30% and the result is 91. What was the original number?', opts:['61','63','70','78'], ans:2,
-    exp:'Let n be original. 1.30n = 91 → n = 91 ÷ 1.30 = 70.' },
+const MATH=[
+  {id:'m01',q:'Solve the system:\n2x + 3y = 12\nx − y = 1\n\nWhat is y?',
+   opts:['1','2','3','4'],ans:1,
+   exp:'From x − y = 1: x = y + 1. Substitute: 2(y+1) + 3y = 12 → 5y + 2 = 12 → 5y = 10 → y = 2.'},
+  {id:'m02',q:'What are the solutions to x² − 5x + 6 = 0?',
+   opts:['x = 1 or x = 6','x = 2 or x = 3','x = −2 or x = −3','x = −1 or x = 6'],ans:1,
+   exp:'Factor: (x − 2)(x − 3) = 0 → x = 2 or x = 3. Check: 4−10+6=0 ✓ and 9−15+6=0 ✓.'},
+  {id:'m03',q:'An exterior angle of a triangle measures 110°. One non-adjacent interior angle is 45°. Find the other non-adjacent interior angle.',
+   opts:['55°','65°','70°','75°'],ans:1,
+   exp:'Exterior Angle Theorem: an exterior angle equals the sum of the two non-adjacent interior angles. 110 = 45 + x → x = 65°.'},
+  {id:'m04',q:'A price increases by 20%, then decreases by 20%. What is the net percent change from the original?',
+   opts:['0%','−2%','−4%','−6%'],ans:2,
+   exp:'Start: 100. After +20%: 120. After −20% of 120: 96. Net = −4%. The two percentages don\'t cancel because they apply to different bases.'},
+  {id:'m05',q:'Alice finishes a report in 6 hours; Bob finishes the same report in 4 hours. Working together, how long does it take?',
+   opts:['2 hours','2 hours 24 minutes','2 hours 30 minutes','5 hours'],ans:1,
+   exp:'Combined rate: 1/6 + 1/4 = 5/12 per hour. Time = 12/5 = 2.4 hours = 2 hours 24 minutes.'},
+  {id:'m06',q:'Two similar triangles have sides in ratio 3:5. The smaller has area 27 cm². What is the larger triangle\'s area?',
+   opts:['35 cm²','45 cm²','75 cm²','125 cm²'],ans:2,
+   exp:'Area scales as the square of the linear ratio: (3/5)² = 9/25. Larger area = 27 × (25/9) = 75 cm².'},
+  {id:'m07',q:'A bag has 4 red, 3 blue, and 5 green marbles. Two are drawn without replacement. What is P(both red)?',
+   opts:['1/9','1/11','1/12','2/11'],ans:1,
+   exp:'P(1st red) = 4/12. P(2nd red | 1st red) = 3/11. P(both) = (4/12)(3/11) = 12/132 = 1/11.'},
+  {id:'m08',q:'Simplify: (2³ × 2⁵) ÷ 2⁴',
+   opts:['8','16','32','64'],ans:1,
+   exp:'Multiply same-base: 2³ × 2⁵ = 2⁸. Divide: 2⁸ ÷ 2⁴ = 2⁴ = 16.'},
+  {id:'m09',q:'Two trains depart from cities 300 miles apart, traveling toward each other at 60 mph and 40 mph. How many hours until they meet?',
+   opts:['2 hours','2.5 hours','3 hours','4 hours'],ans:2,
+   exp:'Combined closing speed = 100 mph. Time = 300 ÷ 100 = 3 hours.'},
+  {id:'m10',q:'A circle has radius 9 cm. What is the arc length for a 40° central angle? (π ≈ 3.14)',
+   opts:['3.14 cm','6.28 cm','12.56 cm','25.12 cm'],ans:1,
+   exp:'Arc = (40/360) × 2πr = (1/9) × 2 × 3.14 × 9 = 6.28 cm.'},
+  {id:'m11',q:'A 15-foot ladder leans against a wall with its base 9 feet from the wall. How high does it reach?',
+   opts:['10 ft','11 ft','12 ft','13 ft'],ans:2,
+   exp:'h² + 9² = 15² → h² = 225 − 81 = 144 → h = 12 ft. (9-12-15 is a 3-4-5 triple × 3.)'},
+  {id:'m12',q:'Solve: −3x + 7 ≥ 19',
+   opts:['x ≤ −4','x ≥ −4','x ≤ 4','x ≥ 4'],ans:0,
+   exp:'Subtract 7: −3x ≥ 12. Divide by −3 and flip the inequality sign: x ≤ −4. Always reverse the inequality when dividing by a negative.'},
+  {id:'m13',q:'A line passes through (−2, 5) with slope 3. What is the y-intercept?',
+   opts:['7','9','11','13'],ans:2,
+   exp:'y = mx + b → 5 = 3(−2) + b → 5 = −6 + b → b = 11.'},
+  {id:'m14',q:'A jar has nickels and dimes totaling $1.75. There are 25 coins total. How many dimes?',
+   opts:['8','9','10','12'],ans:2,
+   exp:'n + d = 25 and 0.05n + 0.10d = 1.75. Substitute n = 25 − d: 1.25 + 0.05d = 1.75 → d = 10.'},
+  {id:'m15',q:'For f(x) = x² − 4x + 3, what are the zeros (values where f(x) = 0)?',
+   opts:['x = 1 and x = −3','x = −1 and x = 3','x = 1 and x = 3','x = −1 and x = −3'],ans:2,
+   exp:'Factor: (x−1)(x−3) = 0 → x = 1 or x = 3. Verify: f(1) = 1−4+3 = 0 ✓. f(3) = 9−12+3 = 0 ✓.'},
 ];
 
-/* ══════════════════════════════════════════════════════
-   ICONS  (inline SVG components)
-══════════════════════════════════════════════════════ */
-const Icon = ({ d, s=20 }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d}/>
-  </svg>
-);
-const HomeIcon   = ({s}) => <Icon s={s} d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"/>;
-const BookIcon   = ({s}) => <Icon s={s} d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>;
-const PenIcon    = ({s}) => <Icon s={s} d="M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>;
-const ScrollIcon = ({s}) => <Icon s={s} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/>;
-const SigmaIcon  = ({s}) => <Icon s={s} d="M18 4H6l6 8-6 8h12"/>;
-const ChevL      = ({s}) => <Icon s={s} d="M15 18l-6-6 6-6"/>;
-const ChevR      = ({s}) => <Icon s={s} d="M9 18l6-6-6-6"/>;
-const StarIcon   = ({s}) => <Icon s={s} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>;
+/* ─── ICONS ─── */
+const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const HomeIcon  =({s})=><Ic s={s} d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"/>;
+const BookIcon  =({s})=><Ic s={s} d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>;
+const PenIcon   =({s})=><Ic s={s} d="M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>;
+const DocIcon   =({s})=><Ic s={s} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/>;
+const SigmaIcon =({s})=><Ic s={s} d="M18 4H6l6 8-6 8h12"/>;
+const ChevL     =({s})=><Ic s={s} d="M15 18l-6-6 6-6"/>;
+const ChevR     =({s})=><Ic s={s} d="M9 18l6-6-6-6"/>;
 
-/* ══════════════════════════════════════════════════════
-   SHARED UI COMPONENTS
-══════════════════════════════════════════════════════ */
-function ProgressBar({ pct, color }) {
-  return (
-    <div className="progress-track" style={{ marginBottom:14 }}>
-      <div className="progress-fill" style={{ width:`${pct}%`, background:color }}/>
+/* ─── SHARED UI ─── */
+function PBar({pct,color}){return<div className="progress-track"><div className="progress-fill" style={{width:`${pct}%`,background:color}}/></div>;}
+function Ring({pct,size=64,label,color}){
+  const r=26,c=2*Math.PI*r,d=(pct/100)*c;
+  return<div style={{textAlign:'center'}}>
+    <svg width={size} height={size} viewBox="0 0 60 60" className="ring-svg">
+      <circle cx="30" cy="30" r={r} fill="none" stroke="#2E2850" strokeWidth="5"/>
+      <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={`${d} ${c}`} strokeLinecap="round" style={{transition:'stroke-dasharray 0.5s ease'}}/>
+    </svg>
+    <div style={{fontFamily:'Crimson Pro',fontSize:11,color:'#6B5F4F',marginTop:2}}>{label}</div>
+    <div style={{fontFamily:'JetBrains Mono',fontSize:11,color,marginTop:1}}>{pct}%</div>
+  </div>;
+}
+function SecHead({color,supra,title,counter}){return<div style={{background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)',padding:'32px 18px 22px',borderBottom:'1px solid #2E2850',position:'relative',overflow:'hidden'}}>
+  <div style={{position:'absolute',top:-40,right:-40,width:140,height:140,borderRadius:'50%',background:`radial-gradient(circle,${color}10 0%,transparent 70%)`,pointerEvents:'none'}}/>
+  <div style={{color,fontSize:10,letterSpacing:'0.3em',fontFamily:'Crimson Pro',textTransform:'uppercase',marginBottom:6,opacity:0.8}}>{supra}</div>
+  <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
+    <h2 className="playfair" style={{fontSize:26,fontWeight:700,color:'#F2E8D0',margin:0}}>{title}</h2>
+    {counter&&<div style={{fontFamily:'JetBrains Mono',fontSize:11,color:'#4A3F6B'}}>{counter}</div>}
+  </div>
+</div>;}
+function ExpBox({correct,text}){return<div style={{background:correct?'rgba(74,140,111,0.10)':'rgba(139,48,48,0.10)',border:`1px solid ${correct?'#4A8C6F':'#8B3030'}`,borderRadius:9,padding:'12px 14px',marginBottom:14}}>
+  <div style={{color:correct?'#6ABF94':'#C25050',fontWeight:600,fontFamily:'Crimson Pro',fontSize:14,marginBottom:4}}>{correct?'✓ Correct':'✗ Not quite'}</div>
+  <div style={{color:'#9E8F75',fontSize:14,lineHeight:1.6,fontFamily:'Crimson Pro'}}>{text}</div>
+</div>;}
+function ResCard({correct,total,color,onReset}){
+  const pct=Math.round((correct/total)*100);
+  const msg=pct>=90?'Masterful.':pct>=75?'Strong work.':pct>=60?'Solid progress.':'Keep at it.';
+  return<div style={{padding:20,textAlign:'center'}}>
+    <div style={{background:'#161225',border:'1px solid #2E2850',borderRadius:14,padding:'28px 20px'}}>
+      <Ring pct={pct} size={90} label="Score" color={color}/>
+      <div className="playfair" style={{fontSize:22,fontWeight:700,color:'#F2E8D0',marginTop:16}}>{correct} / {total}</div>
+      <div style={{fontFamily:'Crimson Pro',fontStyle:'italic',color:'#9E8F75',marginTop:6,fontSize:16}}>{msg}</div>
+      <button onClick={onReset} style={{marginTop:20,background:color+'22',border:`1px solid ${color}44`,borderRadius:8,color,fontFamily:'Crimson Pro',fontSize:15,padding:'10px 28px',cursor:'pointer'}}>Try Again</button>
     </div>
-  );
+  </div>;
 }
+function NxtBtn({onClick,label,color}){return<button onClick={onClick} style={{width:'100%',height:46,borderRadius:9,border:`1px solid ${color}44`,background:color+'18',color,fontFamily:'Crimson Pro',fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>{label}<ChevR s={16}/></button>;}
 
-function Ring({ pct, size=64, label, color }) {
-  const r = 26; const circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  return (
-    <div style={{ textAlign:'center' }}>
-      <svg width={size} height={size} viewBox="0 0 60 60" className="ring-svg">
-        <circle cx="30" cy="30" r={r} fill="none" stroke="#2E2850" strokeWidth="5"/>
-        <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="5"
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition:'stroke-dasharray 0.5s ease' }}/>
-      </svg>
-      <div style={{ fontFamily:'Crimson Pro', fontSize:11, color:'#6B5F4F', marginTop:2 }}>{label}</div>
-      <div style={{ fontFamily:'JetBrains Mono', fontSize:11, color, marginTop:1 }}>{pct}%</div>
-    </div>
-  );
-}
-
-function SectionHeader({ color, supra, title, counter }) {
-  return (
-    <div style={{ background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)', padding:'32px 18px 22px', borderBottom:'1px solid #2E2850', position:'relative', overflow:'hidden' }}>
-      <div style={{ position:'absolute', top:-40, right:-40, width:140, height:140, borderRadius:'50%', background:`radial-gradient(circle, ${color}10 0%, transparent 70%)`, pointerEvents:'none' }}/>
-      <div style={{ color, fontSize:10, letterSpacing:'0.3em', fontFamily:'Crimson Pro', textTransform:'uppercase', marginBottom:6, opacity:0.8 }}>{supra}</div>
-      <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between' }}>
-        <h2 className="playfair" style={{ fontSize:26, fontWeight:700, color:'#F2E8D0', margin:0 }}>{title}</h2>
-        {counter && <div style={{ fontFamily:'JetBrains Mono', fontSize:11, color:'#4A3F6B' }}>{counter}</div>}
-      </div>
-    </div>
-  );
-}
-
-function ExplanationBox({ correct, text }) {
-  return (
-    <div style={{ background:correct?'rgba(74,140,111,0.10)':'rgba(139,48,48,0.10)', border:`1px solid ${correct?'#4A8C6F':'#8B3030'}`, borderRadius:9, padding:'12px 14px', marginBottom:14 }}>
-      <div style={{ color:correct?'#6ABF94':'#C25050', fontWeight:600, fontFamily:'Crimson Pro', fontSize:14, marginBottom:4 }}>
-        {correct ? '✓ Correct' : '✗ Not quite'}
-      </div>
-      <div style={{ color:'#9E8F75', fontSize:14, lineHeight:1.55, fontFamily:'Crimson Pro' }}>{text}</div>
-    </div>
-  );
-}
-
-function ResultCard({ correct, total, color, onReset }) {
-  const pct = Math.round((correct/total)*100);
-  const msg = pct>=90?'Masterful work.':pct>=75?'Strong performance.':pct>=60?'Good progress.':'Keep practicing.';
-  return (
-    <div style={{ padding:20, textAlign:'center' }}>
-      <div style={{ background:'#161225', border:'1px solid #2E2850', borderRadius:14, padding:'28px 20px' }}>
-        <Ring pct={pct} size={90} label="Score" color={color}/>
-        <div className="playfair" style={{ fontSize:22, fontWeight:700, color:'#F2E8D0', marginTop:16 }}>{correct} / {total}</div>
-        <div style={{ fontFamily:'Crimson Pro', fontStyle:'italic', color:'#9E8F75', marginTop:6, fontSize:16 }}>{msg}</div>
-        <button onClick={onReset} style={{ marginTop:20, background:color+'22', border:`1px solid ${color}44`, borderRadius:8, color, fontFamily:'Crimson Pro', fontSize:15, padding:'10px 28px', cursor:'pointer', letterSpacing:'0.04em' }}>
-          Try Again
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function NextButton({ onClick, label, color }) {
-  return (
-    <button onClick={onClick} style={{ width:'100%', height:46, borderRadius:9, border:`1px solid ${color}44`, background:color+'18', color, fontFamily:'Crimson Pro', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-      {label} <ChevR s={16}/>
-    </button>
-  );
-}
-
-/* ══════════════════════════════════════════════════════
-   HOME SCREEN
-══════════════════════════════════════════════════════ */
-function HomeScreen({ progress, onTab }) {
-  const mastered = (progress.vocab?.mastered||[]).length;
-  const gPct = Math.round((progress.grammar?.correct||[]).length / GRAMMAR.length * 100);
-  const rTotal = PASSAGES.reduce((a,p)=>a+p.qs.length,0);
-  const rPct   = Math.round((progress.reading?.correct||[]).length / rTotal * 100);
-  const mPct   = Math.round((progress.math?.correct||[]).length / MATH.length * 100);
-  const vPct   = Math.round(mastered / VOCAB.length * 100);
-
-  const sections = [
-    { id:'verbal',  label:'Verbal Reasoning',     sub:'Vocabulary & Word Roots',   Icon:BookIcon,  color:'#C8A84B', ring:vPct,  badge:`${mastered}/${VOCAB.length} words` },
-    { id:'grammar', label:'Grammar & Usage',       sub:'Sentence Mechanics',        Icon:PenIcon,   color:'#B87A6A', ring:gPct,  badge:`${GRAMMAR.length} questions` },
-    { id:'reading', label:'Reading Comprehension', sub:'Classical Passages',        Icon:ScrollIcon,color:'#7A9EC8', ring:rPct,  badge:`${PASSAGES.length} passages` },
-    { id:'math',    label:'Quantitative Reasoning',sub:'Algebra & Geometry',        Icon:SigmaIcon, color:'#8AB87A', ring:mPct,  badge:`${MATH.length} problems` },
+/* ─── HOME ─── */
+function HomeScreen({progress,onTab}){
+  const mastered=(progress.vocab?.mastered||[]).length;
+  const gPct=Math.round((progress.grammar?.correct||[]).length/GRAMMAR.length*100);
+  const rTotal=PASSAGES.reduce((a,p)=>a+p.qs.length,0);
+  const rPct=Math.round((progress.reading?.correct||[]).length/rTotal*100);
+  const mPct=Math.round((progress.math?.correct||[]).length/MATH.length*100);
+  const vPct=Math.round(mastered/VOCAB.length*100);
+  const secs=[
+    {id:'verbal', label:'Verbal Reasoning',    sub:'Advanced Vocabulary & Roots',  Icon:BookIcon, color:'#C8A84B',ring:vPct,badge:`${mastered}/${VOCAB.length} words`},
+    {id:'grammar',label:'Grammar & Usage',     sub:'Advanced Sentence Mechanics',  Icon:PenIcon,  color:'#B87A6A',ring:gPct,badge:`${GRAMMAR.length} questions`},
+    {id:'reading',label:'Reading Comprehension',sub:'Classical Primary Sources',   Icon:DocIcon,  color:'#7A9EC8',ring:rPct,badge:`${PASSAGES.length} passages`},
+    {id:'math',   label:'Quantitative Reasoning',sub:'Algebra, Geometry & Beyond', Icon:SigmaIcon,color:'#8AB87A',ring:mPct,badge:`${MATH.length} problems`},
   ];
-  return (
-    <div style={{ paddingBottom:24 }}>
-      <div style={{ background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)', padding:'44px 20px 28px', textAlign:'center', borderBottom:'1px solid #2E2850', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(200,168,75,0.06) 0%, transparent 70%)', pointerEvents:'none' }}/>
-        <div style={{ color:'#C8A84B', fontSize:10, letterSpacing:'0.35em', fontFamily:'Crimson Pro', marginBottom:10, textTransform:'uppercase', opacity:0.8 }}>✦ Classic Learning Test · Grade 8 ✦</div>
-        <h1 className="playfair" style={{ fontSize:32, fontWeight:700, color:'#F2E8D0', margin:0, lineHeight:1.1, textShadow:'0 0 30px rgba(200,168,75,0.2)' }}>The Athenaeum</h1>
-        <p style={{ color:'#9E8F75', fontSize:15, marginTop:8, fontStyle:'italic', fontFamily:'Crimson Pro', marginBottom:0 }}>CLT8 Study Companion</p>
-      </div>
-
-      <div style={{ display:'flex', justifyContent:'space-around', padding:'22px 12px', borderBottom:'1px solid #1E1C2E' }}>
-        <Ring pct={vPct}  size={62} label="Vocab"   color="#C8A84B"/>
-        <Ring pct={gPct}  size={62} label="Grammar" color="#B87A6A"/>
-        <Ring pct={rPct}  size={62} label="Reading" color="#7A9EC8"/>
-        <Ring pct={mPct}  size={62} label="Math"    color="#8AB87A"/>
-      </div>
-
-      <div style={{ padding:'16px 14px 0' }}>
-        <div style={{ color:'#4A3F30', fontSize:10, letterSpacing:'0.25em', textTransform:'uppercase', marginBottom:10, fontFamily:'Crimson Pro' }}>Study Sections</div>
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {sections.map(s => (
-            <button key={s.id} onClick={()=>onTab(s.id)} style={{ display:'flex', alignItems:'center', gap:14, background:'#161225', border:'1px solid #2E2850', borderRadius:11, padding:'14px 16px', cursor:'pointer', textAlign:'left', transition:'all 0.18s', width:'100%' }}>
-              <div style={{ width:40, height:40, borderRadius:10, background:s.color+'18', display:'flex', alignItems:'center', justifyContent:'center', color:s.color, flexShrink:0 }}>
-                <s.Icon s={20}/>
-              </div>
-              <div style={{ flex:1 }}>
-                <div className="playfair" style={{ fontSize:15, fontWeight:600, color:'#F2E8D0' }}>{s.label}</div>
-                <div style={{ fontFamily:'Crimson Pro', fontSize:13, color:'#6B5F4F', marginTop:2 }}>{s.sub}</div>
-              </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontFamily:'JetBrains Mono', fontSize:11, color:s.color }}>{s.ring}%</div>
-                <div style={{ fontFamily:'Crimson Pro', fontSize:11, color:'#4A3F6B', marginTop:1 }}>{s.badge}</div>
-              </div>
-            </button>
-          ))}
-        </div>
+  return<div style={{paddingBottom:24}}>
+    <div style={{background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)',padding:'44px 20px 28px',textAlign:'center',borderBottom:'1px solid #2E2850',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:-60,right:-60,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle,rgba(200,168,75,0.06) 0%,transparent 70%)',pointerEvents:'none'}}/>
+      <div style={{color:'#C8A84B',fontSize:10,letterSpacing:'0.35em',fontFamily:'Crimson Pro',marginBottom:10,textTransform:'uppercase',opacity:0.8}}>✦ Classic Learning Test · Grade 8 ✦</div>
+      <h1 className="playfair" style={{fontSize:32,fontWeight:700,color:'#F2E8D0',margin:0,lineHeight:1.1,textShadow:'0 0 30px rgba(200,168,75,0.2)'}}>The Athenaeum</h1>
+      <p style={{color:'#9E8F75',fontSize:15,marginTop:8,fontStyle:'italic',fontFamily:'Crimson Pro',marginBottom:0}}>CLT8 Study Companion</p>
+      <div style={{display:'inline-block',marginTop:10,background:'#C8A84B22',border:'1px solid #C8A84B44',borderRadius:20,padding:'3px 12px'}}>
+        <span style={{fontFamily:'JetBrains Mono',fontSize:10,color:'#C8A84B',letterSpacing:'0.08em'}}>v3 · May 2026 · Advanced</span>
       </div>
     </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════
-   VOCAB DRILL
-══════════════════════════════════════════════════════ */
-function VocabDrill({ progress, onProgress }) {
-  const [mode, setMode] = useState('card');
-  const [idx, setIdx]   = useState(0);
-  const [qIdx, setQIdx] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [answered, setAnswered] = useState(false);
-  const [animKey, setAnimKey] = useState(0);
-
-  const mastered = progress?.mastered || [];
-  const word = VOCAB[idx];
-
-  const toggleMaster = () => {
-    const nm = mastered.includes(word.word) ? mastered.filter(w=>w!==word.word) : [...mastered, word.word];
-    onProgress({ ...progress, mastered:nm });
-  };
-
-  const nav = dir => {
-    if (mode==='card') {
-      setIdx(i=>(i+dir+VOCAB.length)%VOCAB.length);
-      setFlipped(false);
-      setAnimKey(k=>k+1);
-    } else {
-      setQIdx(i=>(i+dir+VOCAB.length)%VOCAB.length);
-      setSelected(null);
-      setAnswered(false);
-    }
-  };
-
-  const quizWord = VOCAB[qIdx];
-  const quizOpts = (() => {
-    const correct = quizWord.def;
-    const others = VOCAB.filter(v=>v.word!==quizWord.word).map(v=>v.def).sort(()=>Math.random()-0.5).slice(0,3);
-    const all = [correct, ...others].sort(()=>Math.random()-0.5);
-    return all;
-  })();
-
-  const handleQuizSelect = opt => {
-    if (answered) return;
-    setSelected(opt); setAnswered(true);
-    if (opt===quizWord.def) {
-      const nm = mastered.includes(quizWord.word) ? mastered : [...mastered, quizWord.word];
-      onProgress({ ...progress, mastered:nm });
-    }
-  };
-
-  const current = mode==='card' ? idx : qIdx;
-
-  return (
-    <div>
-      <SectionHeader color="#C8A84B" supra="Verbal Reasoning" title="Vocabulary" counter={`${current+1} / ${VOCAB.length}`}/>
-      <div style={{ padding:'14px 14px 0' }}>
-        {/* Mode toggle */}
-        <div style={{ display:'flex', background:'#0D0A1A', borderRadius:8, padding:3, gap:3, marginBottom:14 }}>
-          {['card','quiz'].map(m=>(
-            <button key={m} onClick={()=>{setMode(m);setFlipped(false);}} style={{ flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer', background:mode===m?'#1C1730':'transparent', color:mode===m?'#C8A84B':'#6B5F4F', fontFamily:'Crimson Pro', fontSize:14, fontWeight:mode===m?600:400, transition:'all 0.18s' }}>
-              {m==='card'?'Flashcard':'Quiz Mode'}
-            </button>
-          ))}
-        </div>
-        <div style={{ marginBottom:4 }}>
-          <ProgressBar pct={mastered.length/VOCAB.length*100} color="#C8A84B"/>
-        </div>
-        <div style={{ color:'#6B5F4F', fontSize:11, fontFamily:'Crimson Pro', textAlign:'right', marginTop:-10, marginBottom:12 }}>{mastered.length} of {VOCAB.length} mastered</div>
-
-        {mode==='card' ? (
-          <>
-            <div key={animKey} className="fade-up" onClick={()=>setFlipped(f=>!f)} style={{ background:'#161225', border:'1px solid #2E2850', borderRadius:14, padding:'28px 20px', minHeight:200, cursor:'pointer', userSelect:'none', marginBottom:14, position:'relative', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-              <div style={{ position:'absolute', top:12, right:14, fontFamily:'Crimson Pro', fontSize:11, color:'#4A3F6B' }}>tap to flip</div>
-              {!flipped ? (
-                <div style={{ textAlign:'center' }}>
-                  <div className="playfair" style={{ fontSize:28, fontWeight:700, color:'#F2E8D0', marginBottom:10 }}>{word.word}</div>
-                  <div style={{ fontFamily:'Crimson Pro', fontSize:13, color:'#6B5F4F', fontStyle:'italic' }}>{word.root}</div>
-                </div>
-              ) : (
-                <div className="fade-up">
-                  <div className="playfair" style={{ fontSize:18, fontWeight:600, color:'#C8A84B', marginBottom:10 }}>{word.word}</div>
-                  <div style={{ fontFamily:'Crimson Pro', fontSize:16, color:'#F2E8D0', lineHeight:1.55, marginBottom:10 }}>{word.def}</div>
-                  <div style={{ fontFamily:'Crimson Pro', fontSize:14, color:'#9E8F75', fontStyle:'italic', lineHeight:1.5 }}>"{word.ex}"</div>
-                </div>
-              )}
-            </div>
-            <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-              <button onClick={()=>nav(-1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#9E8F75', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevL s={18}/></button>
-              <button onClick={toggleMaster} style={{ flex:1, height:44, borderRadius:8, border:`1px solid ${mastered.includes(word.word)?'#C8A84B44':'#2E2850'}`, background:mastered.includes(word.word)?'#C8A84B22':'#161225', color:mastered.includes(word.word)?'#C8A84B':'#9E8F75', fontFamily:'Crimson Pro', fontSize:14, cursor:'pointer' }}>
-                {mastered.includes(word.word) ? '★ Mastered' : '☆ Mark mastered'}
-              </button>
-              <button onClick={()=>nav(1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#C8A84B', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevR s={18}/></button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ background:'#161225', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
-              <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>Define the word</div>
-              <div className="playfair" style={{ fontSize:22, fontWeight:700, color:'#F2E8D0' }}>{quizWord.word}</div>
-              <div style={{ fontFamily:'Crimson Pro', fontSize:12, color:'#6B5F4F', fontStyle:'italic', marginTop:4 }}>{quizWord.root}</div>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
-              {quizOpts.map((opt,i) => {
-                let cls = 'opt-btn';
-                if (answered) { if(opt===quizWord.def) cls+=' ok'; else if(opt===selected) cls+=' bad'; }
-                else if(opt===selected) cls+=' sel';
-                return <button key={i} className={cls} disabled={answered} onClick={()=>handleQuizSelect(opt)}>{opt}</button>;
-              })}
-            </div>
-            {answered && <ExplanationBox correct={selected===quizWord.def} text={`"${quizWord.word}" — ${quizWord.def} "${quizWord.ex}"`}/>}
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={()=>nav(-1)} style={{ width:44, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#9E8F75', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><ChevL s={18}/></button>
-              <button onClick={()=>nav(1)} style={{ flex:1, height:44, borderRadius:8, border:'1px solid #2E2850', background:'#161225', color:'#C8A84B', cursor:'pointer', fontFamily:'Crimson Pro', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                Next Word <ChevR s={16}/>
-              </button>
-            </div>
-          </>
-        )}
+    <div style={{display:'flex',justifyContent:'space-around',padding:'22px 12px',borderBottom:'1px solid #1E1C2E'}}>
+      <Ring pct={vPct} size={62} label="Vocab"   color="#C8A84B"/>
+      <Ring pct={gPct} size={62} label="Grammar" color="#B87A6A"/>
+      <Ring pct={rPct} size={62} label="Reading" color="#7A9EC8"/>
+      <Ring pct={mPct} size={62} label="Math"    color="#8AB87A"/>
+    </div>
+    <div style={{padding:'16px 14px 0'}}>
+      <div style={{color:'#4A3F30',fontSize:10,letterSpacing:'0.25em',textTransform:'uppercase',marginBottom:10,fontFamily:'Crimson Pro'}}>Study Sections</div>
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        {secs.map(s=><button key={s.id} onClick={()=>onTab(s.id)} style={{display:'flex',alignItems:'center',gap:14,background:'#161225',border:'1px solid #2E2850',borderRadius:11,padding:'14px 16px',cursor:'pointer',textAlign:'left',width:'100%'}}>
+          <div style={{width:40,height:40,borderRadius:10,background:s.color+'18',display:'flex',alignItems:'center',justifyContent:'center',color:s.color,flexShrink:0}}><s.Icon s={20}/></div>
+          <div style={{flex:1}}>
+            <div className="playfair" style={{fontSize:15,fontWeight:600,color:'#F2E8D0'}}>{s.label}</div>
+            <div style={{fontFamily:'Crimson Pro',fontSize:13,color:'#6B5F4F',marginTop:2}}>{s.sub}</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontFamily:'JetBrains Mono',fontSize:11,color:s.color}}>{s.ring}%</div>
+            <div style={{fontFamily:'Crimson Pro',fontSize:11,color:'#4A3F6B',marginTop:1}}>{s.badge}</div>
+          </div>
+        </button>)}
       </div>
     </div>
-  );
+  </div>;
 }
 
-/* ══════════════════════════════════════════════════════
-   GRAMMAR DRILL
-══════════════════════════════════════════════════════ */
-function GrammarDrill({ progress, onProgress }) {
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [answered, setAnswered] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const correct = progress?.correct || [];
-  const wrong   = progress?.wrong   || [];
-  const q = GRAMMAR[idx];
-
-  const handleSelect = i => {
-    if (answered) return;
-    setSelected(i); setAnswered(true);
-    const ok = i===q.ans;
-    if (ok  && !correct.includes(q.id)) onProgress({ ...progress, correct:[...correct,q.id], wrong:wrong.filter(w=>w!==q.id) });
-    if (!ok && !wrong.includes(q.id))   onProgress({ ...progress, wrong:[...wrong,q.id], correct:correct.filter(c=>c!==q.id) });
+/* ─── VOCAB ─── */
+function VocabDrill({progress,onProgress}){
+  const [mode,setMode]=useState('card');
+  const [idx,setIdx]=useState(0);
+  const [qIdx,setQIdx]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+  const [selected,setSelected]=useState(null);
+  const [answered,setAnswered]=useState(false);
+  const [animKey,setAnimKey]=useState(0);
+  const mastered=progress?.mastered||[];
+  const word=VOCAB[idx];
+  const toggleMaster=()=>{
+    const nm=mastered.includes(word.word)?mastered.filter(w=>w!==word.word):[...mastered,word.word];
+    onProgress({...progress,mastered:nm});
   };
-
-  const next = () => {
-    if (idx < GRAMMAR.length-1) { setIdx(i=>i+1); setSelected(null); setAnswered(false); }
-    else setDone(true);
+  const nav=dir=>{
+    if(mode==='card'){setIdx(i=>(i+dir+VOCAB.length)%VOCAB.length);setFlipped(false);setAnimKey(k=>k+1);}
+    else{setQIdx(i=>(i+dir+VOCAB.length)%VOCAB.length);setSelected(null);setAnswered(false);}
   };
-
-  if (done) return (
-    <>
-      <SectionHeader color="#B87A6A" supra="Grammar & Usage" title="Grammar Practice"/>
-      <ResultCard correct={correct.length} total={GRAMMAR.length} color="#B87A6A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/>
-    </>
-  );
-
-  return (
-    <div>
-      <SectionHeader color="#B87A6A" supra="Grammar & Usage" title="Grammar Practice" counter={`${idx+1}/${GRAMMAR.length}`}/>
-      <div style={{ padding:'14px' }}>
-        <ProgressBar pct={(idx/GRAMMAR.length)*100} color="#B87A6A"/>
-        <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
-          <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>Question {idx+1}</div>
-          <div style={{ color:'#F2E8D0', fontSize:16, lineHeight:1.55, fontFamily:'Crimson Pro' }}>{q.q}</div>
-        </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
-          {q.opts.map((opt,i) => {
-            let cls='opt-btn';
-            if(answered){ if(i===q.ans) cls+=' ok'; else if(selected===i) cls+=' bad'; }
-            else if(selected===i) cls+=' sel';
-            return <button key={i} className={cls} disabled={answered} onClick={()=>handleSelect(i)}>
-              <span style={{ fontFamily:'JetBrains Mono', fontSize:10, color:'#6B5F4F', marginRight:6 }}>{String.fromCharCode(65+i)}.</span>{opt}
-            </button>;
-          })}
-        </div>
-        {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
-        {answered && <NextButton onClick={next} label={idx<GRAMMAR.length-1?'Next Question':'See Results'} color="#B87A6A"/>}
+  const qw=VOCAB[qIdx];
+  const qopts=(()=>{const c=qw.def,o=VOCAB.filter(v=>v.word!==qw.word).map(v=>v.def).sort(()=>Math.random()-0.5).slice(0,3);return[c,...o].sort(()=>Math.random()-0.5);})();
+  const handleQ=opt=>{
+    if(answered)return;setSelected(opt);setAnswered(true);
+    if(opt===qw.def){const nm=mastered.includes(qw.word)?mastered:[...mastered,qw.word];onProgress({...progress,mastered:nm});}
+  };
+  const cur=mode==='card'?idx:qIdx;
+  return<div>
+    <SecHead color="#C8A84B" supra="Verbal Reasoning" title="Vocabulary" counter={`${cur+1} / ${VOCAB.length}`}/>
+    <div style={{padding:'14px 14px 0'}}>
+      <div style={{display:'flex',background:'#0D0A1A',borderRadius:8,padding:3,gap:3,marginBottom:14}}>
+        {['card','quiz'].map(m=><button key={m} onClick={()=>{setMode(m);setFlipped(false);}} style={{flex:1,padding:'7px 0',borderRadius:6,border:'none',cursor:'pointer',background:mode===m?'#1C1730':'transparent',color:mode===m?'#C8A84B':'#6B5F4F',fontFamily:'Crimson Pro',fontSize:14,fontWeight:mode===m?600:400}}>{m==='card'?'Flashcard':'Quiz Mode'}</button>)}
       </div>
+      <PBar pct={mastered.length/VOCAB.length*100} color="#C8A84B"/>
+      <div style={{color:'#6B5F4F',fontSize:11,fontFamily:'Crimson Pro',textAlign:'right',marginTop:-10,marginBottom:12}}>{mastered.length} of {VOCAB.length} mastered</div>
+      {mode==='card'?<>
+        <div key={animKey} className="fade-up" onClick={()=>setFlipped(f=>!f)} style={{background:'#161225',border:'1px solid #2E2850',borderRadius:14,padding:'28px 20px',minHeight:200,cursor:'pointer',userSelect:'none',marginBottom:14,position:'relative',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+          <div style={{position:'absolute',top:12,right:14,fontFamily:'Crimson Pro',fontSize:11,color:'#4A3F6B'}}>tap to flip</div>
+          {!flipped?<div style={{textAlign:'center'}}>
+            <div className="playfair" style={{fontSize:28,fontWeight:700,color:'#F2E8D0',marginBottom:10}}>{word.word}</div>
+            <div style={{fontFamily:'Crimson Pro',fontSize:13,color:'#6B5F4F',fontStyle:'italic'}}>{word.root}</div>
+          </div>:<div className="fade-up">
+            <div className="playfair" style={{fontSize:18,fontWeight:600,color:'#C8A84B',marginBottom:10}}>{word.word}</div>
+            <div style={{fontFamily:'Crimson Pro',fontSize:16,color:'#F2E8D0',lineHeight:1.55,marginBottom:10}}>{word.def}</div>
+            <div style={{fontFamily:'Crimson Pro',fontSize:14,color:'#9E8F75',fontStyle:'italic',lineHeight:1.5}}>"{word.ex}"</div>
+          </div>}
+        </div>
+        <div style={{display:'flex',gap:8,marginBottom:14}}>
+          <button onClick={()=>nav(-1)} style={{width:44,height:44,borderRadius:8,border:'1px solid #2E2850',background:'#161225',color:'#9E8F75',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevL s={18}/></button>
+          <button onClick={toggleMaster} style={{flex:1,height:44,borderRadius:8,border:`1px solid ${mastered.includes(word.word)?'#C8A84B44':'#2E2850'}`,background:mastered.includes(word.word)?'#C8A84B22':'#161225',color:mastered.includes(word.word)?'#C8A84B':'#9E8F75',fontFamily:'Crimson Pro',fontSize:14,cursor:'pointer'}}>{mastered.includes(word.word)?'★ Mastered':'☆ Mark mastered'}</button>
+          <button onClick={()=>nav(1)} style={{width:44,height:44,borderRadius:8,border:'1px solid #2E2850',background:'#161225',color:'#C8A84B',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevR s={18}/></button>
+        </div>
+      </>:<>
+        <div style={{background:'#161225',border:'1px solid #2E2850',borderRadius:12,padding:20,marginBottom:14}}>
+          <div style={{color:'#6B5F4F',fontSize:10,letterSpacing:'0.18em',textTransform:'uppercase',fontFamily:'Crimson Pro',marginBottom:10}}>Define the word</div>
+          <div className="playfair" style={{fontSize:22,fontWeight:700,color:'#F2E8D0'}}>{qw.word}</div>
+          <div style={{fontFamily:'Crimson Pro',fontSize:12,color:'#6B5F4F',fontStyle:'italic',marginTop:4}}>{qw.root}</div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
+          {qopts.map((opt,i)=>{let cls='opt-btn';if(answered){if(opt===qw.def)cls+=' ok';else if(opt===selected)cls+=' bad';}else if(opt===selected)cls+=' sel';return<button key={i} className={cls} disabled={answered} onClick={()=>handleQ(opt)}>{opt}</button>;})}
+        </div>
+        {answered&&<ExpBox correct={selected===qw.def} text={`"${qw.word}" — ${qw.def}  ·  "${qw.ex}"`}/>}
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>nav(-1)} style={{width:44,height:44,borderRadius:8,border:'1px solid #2E2850',background:'#161225',color:'#9E8F75',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevL s={18}/></button>
+          <button onClick={()=>nav(1)} style={{flex:1,height:44,borderRadius:8,border:'1px solid #2E2850',background:'#161225',color:'#C8A84B',cursor:'pointer',fontFamily:'Crimson Pro',fontSize:15,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>Next Word<ChevR s={16}/></button>
+        </div>
+      </>}
     </div>
-  );
+  </div>;
 }
 
-/* ══════════════════════════════════════════════════════
-   READING DRILL
-══════════════════════════════════════════════════════ */
-function ReadingDrill({ progress, onProgress }) {
-  const [pIdx, setPIdx] = useState(0);
-  const [qIdx, setQIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [answered, setAnswered] = useState(false);
-  const [view, setView] = useState('passage'); // 'passage' | 'question'
-
-  const correct = progress?.correct || [];
-  const wrong   = progress?.wrong   || [];
-  const passage = PASSAGES[pIdx];
-  const q       = passage.qs[qIdx];
-  const qId     = `${pIdx}-${qIdx}`;
-
-  const handleSelect = i => {
-    if (answered) return;
-    setSelected(i); setAnswered(true);
-    const ok = i===q.ans;
-    if (ok  && !correct.includes(qId)) onProgress({ ...progress, correct:[...correct,qId], wrong:wrong.filter(w=>w!==qId) });
-    if (!ok && !wrong.includes(qId))   onProgress({ ...progress, wrong:[...wrong,qId], correct:correct.filter(c=>c!==qId) });
+/* ─── GRAMMAR ─── */
+function GrammarDrill({progress,onProgress}){
+  const [idx,setIdx]=useState(0);
+  const [selected,setSelected]=useState(null);
+  const [answered,setAnswered]=useState(false);
+  const [done,setDone]=useState(false);
+  const correct=progress?.correct||[],wrong=progress?.wrong||[];
+  const q=GRAMMAR[idx];
+  const handle=i=>{
+    if(answered)return;setSelected(i);setAnswered(true);
+    const ok=i===q.ans;
+    if(ok&&!correct.includes(q.id))onProgress({...progress,correct:[...correct,q.id],wrong:wrong.filter(w=>w!==q.id)});
+    if(!ok&&!wrong.includes(q.id))onProgress({...progress,wrong:[...wrong,q.id],correct:correct.filter(c=>c!==q.id)});
   };
-
-  const next = () => {
-    if (qIdx < passage.qs.length-1) { setQIdx(i=>i+1); setSelected(null); setAnswered(false); setView('question'); }
-    else if (pIdx < PASSAGES.length-1) { setPIdx(i=>i+1); setQIdx(0); setSelected(null); setAnswered(false); setView('passage'); }
-    // else done (just show last result)
-  };
-
-  const rTotal = PASSAGES.reduce((a,p)=>a+p.qs.length,0);
-  const rDone  = PASSAGES.slice(0,pIdx).reduce((a,p)=>a+p.qs.length,0) + qIdx;
-
-  return (
-    <div>
-      <SectionHeader color="#7A9EC8" supra="Reading Comprehension" title="Classical Passages" counter={`${pIdx+1}/${PASSAGES.length}`}/>
-      <div style={{ padding:'14px' }}>
-        <ProgressBar pct={(rDone/rTotal)*100} color="#7A9EC8"/>
-
-        {/* Toggle */}
-        <div style={{ display:'flex', background:'#0D0A1A', borderRadius:8, padding:3, gap:3, marginBottom:14 }}>
-          {['passage','question'].map(v=>(
-            <button key={v} onClick={()=>setView(v)} style={{ flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer', background:view===v?'#1C1730':'transparent', color:view===v?'#7A9EC8':'#6B5F4F', fontFamily:'Crimson Pro', fontSize:14, fontWeight:view===v?600:400, transition:'all 0.18s' }}>
-              {v==='passage'?'Passage':'Question'}
-            </button>
-          ))}
-        </div>
-
-        {view==='passage' ? (
-          <>
-            <div style={{ background:'#161225', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
-              <div style={{ color:'#7A9EC8', fontSize:12, fontFamily:'Crimson Pro', fontStyle:'italic', marginBottom:12, opacity:0.8 }}>{passage.title}</div>
-              {passage.text.split('\n\n').map((para,i)=>(
-                <p key={i} style={{ fontFamily:'Crimson Pro', fontSize:15, lineHeight:1.7, color:'#D4C8B0', margin:i===0?0:'12px 0 0' }}>{para.trim()}</p>
-              ))}
-            </div>
-            <NextButton onClick={()=>setView('question')} label="Go to Questions" color="#7A9EC8"/>
-          </>
-        ) : (
-          <>
-            <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
-              <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>Question {qIdx+1} of {passage.qs.length}</div>
-              <div style={{ color:'#F2E8D0', fontSize:16, lineHeight:1.55, fontFamily:'Crimson Pro' }}>{q.q}</div>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:14 }}>
-              {q.opts.map((opt,i)=>{
-                let cls='opt-btn';
-                if(answered){ if(i===q.ans) cls+=' ok'; else if(selected===i) cls+=' bad'; }
-                else if(selected===i) cls+=' sel';
-                return <button key={i} className={cls} disabled={answered} onClick={()=>handleSelect(i)}>
-                  <span style={{ fontFamily:'JetBrains Mono', fontSize:10, color:'#6B5F4F', marginRight:6 }}>{String.fromCharCode(65+i)}.</span>{opt}
-                </button>;
-              })}
-            </div>
-            {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
-            {answered && (pIdx<PASSAGES.length-1 || qIdx<passage.qs.length-1) && (
-              <NextButton onClick={next} label={qIdx<passage.qs.length-1?'Next Question':'Next Passage'} color="#7A9EC8"/>
-            )}
-          </>
-        )}
+  const next=()=>{if(idx<GRAMMAR.length-1){setIdx(i=>i+1);setSelected(null);setAnswered(false);}else setDone(true);};
+  if(done)return<><SecHead color="#B87A6A" supra="Grammar & Usage" title="Grammar Practice"/><ResCard correct={correct.length} total={GRAMMAR.length} color="#B87A6A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/></>;
+  return<div>
+    <SecHead color="#B87A6A" supra="Grammar & Usage" title="Grammar Practice" counter={`${idx+1}/${GRAMMAR.length}`}/>
+    <div style={{padding:'14px'}}>
+      <PBar pct={(idx/GRAMMAR.length)*100} color="#B87A6A"/>
+      <div style={{background:'#1C1730',border:'1px solid #2E2850',borderRadius:12,padding:20,marginBottom:14}}>
+        <div style={{color:'#6B5F4F',fontSize:10,letterSpacing:'0.18em',textTransform:'uppercase',fontFamily:'Crimson Pro',marginBottom:10}}>Question {idx+1}</div>
+        <div style={{color:'#F2E8D0',fontSize:16,lineHeight:1.6,fontFamily:'Crimson Pro'}}>{q.q}</div>
       </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════
-   MATH DRILL
-══════════════════════════════════════════════════════ */
-function MathDrill({ progress, onProgress }) {
-  const [idx, setIdx]     = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [answered, setAnswered] = useState(false);
-  const [done, setDone]   = useState(false);
-
-  const correct = progress?.correct || [];
-  const wrong   = progress?.wrong   || [];
-  const q = MATH[idx];
-
-  const handleSelect = i => {
-    if (answered) return;
-    setSelected(i); setAnswered(true);
-    const ok = i===q.ans;
-    if (ok  && !correct.includes(q.id)) onProgress({ ...progress, correct:[...correct,q.id], wrong:wrong.filter(w=>w!==q.id) });
-    if (!ok && !wrong.includes(q.id))   onProgress({ ...progress, wrong:[...wrong,q.id], correct:correct.filter(c=>c!==q.id) });
-  };
-
-  const next = () => {
-    if (idx < MATH.length-1) { setIdx(i=>i+1); setSelected(null); setAnswered(false); }
-    else setDone(true);
-  };
-
-  if (done) return (
-    <>
-      <SectionHeader color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice"/>
-      <ResultCard correct={correct.length} total={MATH.length} color="#8AB87A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/>
-    </>
-  );
-
-  return (
-    <div>
-      <SectionHeader color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice" counter={`${idx+1}/${MATH.length}`}/>
-      <div style={{ padding:'14px' }}>
-        <ProgressBar pct={(idx/MATH.length)*100} color="#8AB87A"/>
-        <div style={{ background:'#1C1730', border:'1px solid #2E2850', borderRadius:12, padding:20, marginBottom:14 }}>
-          <div style={{ color:'#6B5F4F', fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', fontFamily:'Crimson Pro', marginBottom:10 }}>Problem {idx+1}</div>
-          <div style={{ color:'#F2E8D0', fontSize:17, lineHeight:1.55, fontFamily:'Crimson Pro' }}>{q.q}</div>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
-          {q.opts.map((opt,i)=>{
-            let cls='opt-btn';
-            if(answered){ if(i===q.ans) cls+=' ok'; else if(selected===i) cls+=' bad'; }
-            else if(selected===i) cls+=' sel';
-            return (
-              <button key={i} className={cls} disabled={answered} onClick={()=>handleSelect(i)} style={{ textAlign:'center', padding:'14px 8px' }}>
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
-                  <span style={{ fontFamily:'JetBrains Mono', fontSize:10, opacity:0.38 }}>{String.fromCharCode(65+i)}</span>
-                  <span style={{ fontFamily:'JetBrains Mono', fontSize:20, fontWeight:500 }}>{opt}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        {answered && <ExplanationBox correct={selected===q.ans} text={q.exp}/>}
-        {answered && <NextButton onClick={next} label={idx<MATH.length-1?'Next Problem':'See Results'} color="#8AB87A"/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
+        {q.opts.map((opt,i)=>{let cls='opt-btn';if(answered){if(i===q.ans)cls+=' ok';else if(selected===i)cls+=' bad';}else if(selected===i)cls+=' sel';return<button key={i} className={cls} disabled={answered} onClick={()=>handle(i)}><span style={{fontFamily:'JetBrains Mono',fontSize:10,color:'#6B5F4F',marginRight:6}}>{String.fromCharCode(65+i)}.</span>{opt}</button>;})}
       </div>
+      {answered&&<ExpBox correct={selected===q.ans} text={q.exp}/>}
+      {answered&&<NxtBtn onClick={next} label={idx<GRAMMAR.length-1?'Next Question':'See Results'} color="#B87A6A"/>}
     </div>
-  );
+  </div>;
 }
 
-/* ══════════════════════════════════════════════════════
-   APP ROOT
-══════════════════════════════════════════════════════ */
-function App() {
-  const [tab, setTab] = useState('home');
-  const [progress, setProgress] = useState(()=>{
-    const s = gs('progress');
-    return s || { vocab:{mastered:[],seen:[]}, grammar:{correct:[],wrong:[]}, reading:{correct:[],wrong:[]}, math:{correct:[],wrong:[]} };
-  });
-
-  const save = (key, val) => {
-    const np = { ...progress, [key]:val };
-    setProgress(np); ss('progress', np);
+/* ─── READING ─── */
+function ReadingDrill({progress,onProgress}){
+  const [pIdx,setPIdx]=useState(0);
+  const [qIdx,setQIdx]=useState(0);
+  const [selected,setSelected]=useState(null);
+  const [answered,setAnswered]=useState(false);
+  const [view,setView]=useState('passage');
+  const correct=progress?.correct||[],wrong=progress?.wrong||[];
+  const passage=PASSAGES[pIdx],q=passage.qs[qIdx],qId=`${pIdx}-${qIdx}`;
+  const handle=i=>{
+    if(answered)return;setSelected(i);setAnswered(true);
+    const ok=i===q.ans;
+    if(ok&&!correct.includes(qId))onProgress({...progress,correct:[...correct,qId],wrong:wrong.filter(w=>w!==qId)});
+    if(!ok&&!wrong.includes(qId))onProgress({...progress,wrong:[...wrong,qId],correct:correct.filter(c=>c!==qId)});
   };
+  const next=()=>{
+    if(qIdx<passage.qs.length-1){setQIdx(i=>i+1);setSelected(null);setAnswered(false);setView('question');}
+    else if(pIdx<PASSAGES.length-1){setPIdx(i=>i+1);setQIdx(0);setSelected(null);setAnswered(false);setView('passage');}
+  };
+  const rTotal=PASSAGES.reduce((a,p)=>a+p.qs.length,0);
+  const rDone=PASSAGES.slice(0,pIdx).reduce((a,p)=>a+p.qs.length,0)+qIdx;
+  return<div>
+    <SecHead color="#7A9EC8" supra="Reading Comprehension" title="Classical Passages" counter={`${pIdx+1}/${PASSAGES.length}`}/>
+    <div style={{padding:'14px'}}>
+      <PBar pct={(rDone/rTotal)*100} color="#7A9EC8"/>
+      <div style={{display:'flex',background:'#0D0A1A',borderRadius:8,padding:3,gap:3,marginBottom:14}}>
+        {['passage','question'].map(v=><button key={v} onClick={()=>setView(v)} style={{flex:1,padding:'7px 0',borderRadius:6,border:'none',cursor:'pointer',background:view===v?'#1C1730':'transparent',color:view===v?'#7A9EC8':'#6B5F4F',fontFamily:'Crimson Pro',fontSize:14,fontWeight:view===v?600:400}}>{v==='passage'?'Passage':'Question'}</button>)}
+      </div>
+      {view==='passage'?<>
+        <div style={{background:'#161225',border:'1px solid #2E2850',borderRadius:12,padding:20,marginBottom:14}}>
+          <div style={{color:'#7A9EC8',fontSize:12,fontFamily:'Crimson Pro',fontStyle:'italic',marginBottom:14,lineHeight:1.4}}>{passage.title}</div>
+          {passage.text.split('\n\n').map((p,i)=><p key={i} style={{fontFamily:'Crimson Pro',fontSize:15,lineHeight:1.75,color:'#D4C8B0',margin:i===0?0:'14px 0 0'}}>{p.trim()}</p>)}
+        </div>
+        <NxtBtn onClick={()=>setView('question')} label="Go to Questions" color="#7A9EC8"/>
+      </>:<>
+        <div style={{background:'#1C1730',border:'1px solid #2E2850',borderRadius:12,padding:20,marginBottom:14}}>
+          <div style={{color:'#6B5F4F',fontSize:10,letterSpacing:'0.18em',textTransform:'uppercase',fontFamily:'Crimson Pro',marginBottom:10}}>Question {qIdx+1} of {passage.qs.length}</div>
+          <div style={{color:'#F2E8D0',fontSize:16,lineHeight:1.55,fontFamily:'Crimson Pro'}}>{q.q}</div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
+          {q.opts.map((opt,i)=>{let cls='opt-btn';if(answered){if(i===q.ans)cls+=' ok';else if(selected===i)cls+=' bad';}else if(selected===i)cls+=' sel';return<button key={i} className={cls} disabled={answered} onClick={()=>handle(i)}><span style={{fontFamily:'JetBrains Mono',fontSize:10,color:'#6B5F4F',marginRight:6}}>{String.fromCharCode(65+i)}.</span>{opt}</button>;})}
+        </div>
+        {answered&&<ExpBox correct={selected===q.ans} text={q.exp}/>}
+        {answered&&(pIdx<PASSAGES.length-1||qIdx<passage.qs.length-1)&&<NxtBtn onClick={next} label={qIdx<passage.qs.length-1?'Next Question':'Next Passage'} color="#7A9EC8"/>}
+      </>}
+    </div>
+  </div>;
+}
 
-  const tabs = [
-    { id:'home',    label:'Home',    Icon:HomeIcon,   color:'#C8A84B' },
-    { id:'verbal',  label:'Verbal',  Icon:BookIcon,   color:'#C8A84B' },
-    { id:'grammar', label:'Grammar', Icon:PenIcon,    color:'#B87A6A' },
-    { id:'reading', label:'Reading', Icon:ScrollIcon, color:'#7A9EC8' },
-    { id:'math',    label:'Math',    Icon:SigmaIcon,  color:'#8AB87A' },
+/* ─── MATH ─── */
+function MathDrill({progress,onProgress}){
+  const [idx,setIdx]=useState(0);
+  const [selected,setSelected]=useState(null);
+  const [answered,setAnswered]=useState(false);
+  const [done,setDone]=useState(false);
+  const correct=progress?.correct||[],wrong=progress?.wrong||[];
+  const q=MATH[idx];
+  const handle=i=>{
+    if(answered)return;setSelected(i);setAnswered(true);
+    const ok=i===q.ans;
+    if(ok&&!correct.includes(q.id))onProgress({...progress,correct:[...correct,q.id],wrong:wrong.filter(w=>w!==q.id)});
+    if(!ok&&!wrong.includes(q.id))onProgress({...progress,wrong:[...wrong,q.id],correct:correct.filter(c=>c!==q.id)});
+  };
+  const next=()=>{if(idx<MATH.length-1){setIdx(i=>i+1);setSelected(null);setAnswered(false);}else setDone(true);};
+  if(done)return<><SecHead color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice"/><ResCard correct={correct.length} total={MATH.length} color="#8AB87A" onReset={()=>{setIdx(0);setSelected(null);setAnswered(false);setDone(false);}}/></>;
+  return<div>
+    <SecHead color="#8AB87A" supra="Quantitative Reasoning" title="Math Practice" counter={`${idx+1}/${MATH.length}`}/>
+    <div style={{padding:'14px'}}>
+      <PBar pct={(idx/MATH.length)*100} color="#8AB87A"/>
+      <div style={{background:'#1C1730',border:'1px solid #2E2850',borderRadius:12,padding:20,marginBottom:14}}>
+        <div style={{color:'#6B5F4F',fontSize:10,letterSpacing:'0.18em',textTransform:'uppercase',fontFamily:'Crimson Pro',marginBottom:10}}>Problem {idx+1}</div>
+        <div style={{color:'#F2E8D0',fontSize:16,lineHeight:1.65,fontFamily:'Crimson Pro',whiteSpace:'pre-line'}}>{q.q}</div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
+        {q.opts.map((opt,i)=>{let cls='opt-btn';if(answered){if(i===q.ans)cls+=' ok';else if(selected===i)cls+=' bad';}else if(selected===i)cls+=' sel';return<button key={i} className={cls} disabled={answered} onClick={()=>handle(i)} style={{textAlign:'center',padding:'14px 8px'}}><div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3}}><span style={{fontFamily:'JetBrains Mono',fontSize:10,opacity:0.38}}>{String.fromCharCode(65+i)}</span><span style={{fontFamily:'JetBrains Mono',fontSize:17,fontWeight:500}}>{opt}</span></div></button>;})}
+      </div>
+      {answered&&<ExpBox correct={selected===q.ans} text={q.exp}/>}
+      {answered&&<NxtBtn onClick={next} label={idx<MATH.length-1?'Next Problem':'See Results'} color="#8AB87A"/>}
+    </div>
+  </div>;
+}
+
+/* ─── APP ─── */
+function App(){
+  const [tab,setTab]=useState('home');
+  const [progress,setProgress]=useState(()=>{const s=gs('progress');return s||{vocab:{mastered:[],seen:[]},grammar:{correct:[],wrong:[]},reading:{correct:[],wrong:[]},math:{correct:[],wrong:[]}};});
+  const save=(key,val)=>{const np={...progress,[key]:val};setProgress(np);ss('progress',np);};
+  const tabs=[
+    {id:'home',   label:'Home',   Icon:HomeIcon, color:'#C8A84B'},
+    {id:'verbal', label:'Verbal', Icon:BookIcon, color:'#C8A84B'},
+    {id:'grammar',label:'Grammar',Icon:PenIcon,  color:'#B87A6A'},
+    {id:'reading',label:'Reading',Icon:DocIcon,  color:'#7A9EC8'},
+    {id:'math',   label:'Math',   Icon:SigmaIcon,color:'#8AB87A'},
   ];
-
-  return (
-    <div style={{ background:'#0D0A1A', minHeight:'100vh', fontFamily:"'Crimson Pro',Georgia,serif" }}>
-      <main style={{ paddingBottom:72, minHeight:'100vh' }}>
-        <div className="fade-up" key={tab}>
-          {tab==='home'    && <HomeScreen progress={progress} onTab={setTab}/>}
-          {tab==='verbal'  && <VocabDrill   progress={progress.vocab}   onProgress={v=>save('vocab',v)}/>}
-          {tab==='grammar' && <GrammarDrill progress={progress.grammar} onProgress={v=>save('grammar',v)}/>}
-          {tab==='reading' && <ReadingDrill progress={progress.reading} onProgress={v=>save('reading',v)}/>}
-          {tab==='math'    && <MathDrill    progress={progress.math}    onProgress={v=>save('math',v)}/>}
-        </div>
-      </main>
-      <nav style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(13,10,26,0.97)', borderTop:'1px solid #2E2850', display:'flex', zIndex:100, backdropFilter:'blur(10px)', paddingBottom:'env(safe-area-inset-bottom)' }}>
-        {tabs.map(({id,label,Icon,color})=>{
-          const active = tab===id;
-          return (
-            <button key={id} className={`nav-btn${active?' active':''}`} onClick={()=>setTab(id)} style={{ color:active?color:undefined }}>
-              <Icon s={20}/><span>{label}</span>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
+  return<div style={{background:'#0D0A1A',minHeight:'100vh',fontFamily:"'Crimson Pro',Georgia,serif"}}>
+    <main style={{paddingBottom:72,minHeight:'100vh'}}>
+      <div className="fade-up" key={tab}>
+        {tab==='home'   &&<HomeScreen  progress={progress} onTab={setTab}/>}
+        {tab==='verbal' &&<VocabDrill  progress={progress.vocab}   onProgress={v=>save('vocab',v)}/>}
+        {tab==='grammar'&&<GrammarDrill progress={progress.grammar} onProgress={v=>save('grammar',v)}/>}
+        {tab==='reading'&&<ReadingDrill progress={progress.reading} onProgress={v=>save('reading',v)}/>}
+        {tab==='math'   &&<MathDrill   progress={progress.math}    onProgress={v=>save('math',v)}/>}
+      </div>
+    </main>
+    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:'rgba(13,10,26,0.97)',borderTop:'1px solid #2E2850',display:'flex',zIndex:100,backdropFilter:'blur(10px)',paddingBottom:'env(safe-area-inset-bottom)'}}>
+      {tabs.map(({id,label,Icon,color})=>{const active=tab===id;return<button key={id} className={`nav-btn${active?' active':''}`} onClick={()=>setTab(id)} style={{color:active?color:undefined}}><Icon s={20}/><span>{label}</span></button>;})}
+    </nav>
+  </div>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
