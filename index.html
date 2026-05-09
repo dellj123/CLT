@@ -34,194 +34,291 @@
 <div id="root"></div>
 <script type="text/babel">
 const { useState } = React;
-const KEY='clt8:v3:';
+const KEY='clt8:v4:';
 const gs=k=>{try{const v=localStorage.getItem(KEY+k);return v?JSON.parse(v):null;}catch{return null;}};
 const ss=(k,v)=>{try{localStorage.setItem(KEY+k,JSON.stringify(v));}catch{}};
 
-/* ─── DATA ─── */
-const VOCAB=[
-  {word:'Anfractuous',  root:'L. anfractus (bending)',        def:'Winding; circuitous; full of twists.',                              ex:'The anfractuous path through the argument confused every reader.'},
-  {word:'Apothegm',     root:'Gk. apophthegma (terse saying)',def:'A short, pithy, instructive maxim.',                               ex:'His grandfather\'s apothegms proved wiser than any long lecture.'},
-  {word:'Cacoethes',    root:'Gk. kakoēthes (ill habit)',     def:'An irresistible compulsion to do something inadvisable.',          ex:'Her cacoethes for blunt speech cost her several friendships.'},
-  {word:'Captious',     root:'L. captiosus (deceptive)',      def:'Tending to find trivial faults; raising petty objections.',        ex:'The captious editor marked every comma while ignoring the plot.'},
-  {word:'Contumacious', root:'L. contumax (stubborn)',        def:'Stubbornly disobedient; rebelliously resistant to authority.',     ex:'The contumacious defendant refused to rise when the judge entered.'},
-  {word:'Desultory',    root:'L. desultor (circus rider)',    def:'Lacking plan or purpose; disconnected; randomly jumping topics.',  ex:'His desultory reading left him with fragments of knowledge but no depth.'},
-  {word:'Dilatory',     root:'L. dilatorius (delaying)',      def:'Slow to act; tending to cause or produce delay.',                  ex:'The dilatory contractor kept postponing repairs for months.'},
-  {word:'Encomium',     root:'Gk. enkōmion (festive song)',   def:'A formal expression of warm praise; a tribute.',                  ex:'The retiring professor received a heartfelt encomium from her students.'},
-  {word:'Expiate',      root:'L. expiare (to atone)',         def:'To make amends for wrongdoing; to atone for guilt or sin.',       ex:'He fasted to expiate what he believed was a moral failure.'},
-  {word:'Fungible',     root:'L. fungi (to serve/perform)',   def:'Interchangeable; replaceable by another identical item.',         ex:'Commodities such as wheat are fungible — one bushel equals another.'},
-  {word:'Liminal',      root:'L. limen (threshold)',          def:'Relating to a transitional or threshold stage between two states.',ex:'Adolescence is often described as a liminal period of identity.'},
-  {word:'Nugatory',     root:'L. nugatorius (trifling)',      def:'Of no value or importance; useless; futile.',                     ex:'The committee\'s vague report proved entirely nugatory.'},
-  {word:'Palimpsest',   root:'Gk. palimpsēstos (scraped again)',def:'A manuscript bearing erased earlier writing; anything showing traces of an earlier form.',ex:'The city\'s streets are a palimpsest of every era of its history.'},
-  {word:'Tendentious',  root:'Med. L. tendentia (tendency)',  def:'Promoting a particular cause or point of view; biased.',          ex:'The documentary was compelling but clearly tendentious in its editing.'},
-  {word:'Prolix',       root:'L. prolixus (poured forth)',    def:'Using far too many words; tediously wordy.',                      ex:'The prolix senator rarely answered a question in fewer than twenty minutes.'},
-  {word:'Recondite',    root:'L. reconditus (hidden away)',   def:'Dealing with obscure subject matter; not widely known.',          ex:'His recondite knowledge of Byzantine coinage impressed even specialists.'},
-  {word:'Tergiversate', root:'L. tergum+vertere (turn back)',def:'To make evasive or conflicting statements; to equivocate.',      ex:'When pressed on the scandal, the politician began to tergiversate.'},
-  {word:'Velleity',     root:'Med. L. velleitas (slight wish)',def:'A desire too faint to motivate action; the weakest degree of volition.',ex:'His velleity to learn Italian never progressed beyond buying a dictionary.'},
-  {word:'Bathetic',     root:'Gk. bathos (depth)',            def:'Producing an anticlimax; ludicrously sentimental.',              ex:'The film\'s powerful climax was undermined by its bathetic final line.'},
-  {word:'Comminatory',  root:'L. comminari (to threaten)',    def:'Threatening divine vengeance or severe punishment.',              ex:'The prophet\'s comminatory speeches drove the crowd to repentance.'},
+/* ══════════════════════════════════════════
+   DATA — v4 (moderate / original difficulty)
+══════════════════════════════════════════ */
+
+const VOCAB = [
+  { word:'Ambiguous',   root:'L. ambiguus (wandering)',      def:'Open to more than one interpretation; unclear.',                   ex:'The teacher\'s ambiguous instructions left students confused about the assignment.' },
+  { word:'Benevolent',  root:'L. bene + velle (wish well)',  def:'Well-meaning and kindly; generous.',                              ex:'The benevolent donor funded the new school library.' },
+  { word:'Candid',      root:'L. candidus (white, pure)',    def:'Truthful and straightforward; frank.',                            ex:'Her candid feedback helped me improve my writing significantly.' },
+  { word:'Diligent',    root:'L. diligere (to value)',       def:'Having or showing care and effort in work.',                      ex:'The diligent student reviewed her notes every evening.' },
+  { word:'Eloquent',    root:'L. eloqui (to speak out)',     def:'Fluent and persuasive in speaking or writing.',                   ex:'His eloquent speech moved the audience to tears.' },
+  { word:'Fervent',     root:'L. fervere (to boil)',         def:'Having or displaying passionate intensity.',                      ex:'She was a fervent supporter of the local food bank.' },
+  { word:'Gregarious',  root:'L. grex (flock, herd)',        def:'Fond of company; sociable.',                                     ex:'The gregarious new student quickly made friends in every class.' },
+  { word:'Humble',      root:'L. humilis (low, grounded)',   def:'Having a modest opinion of oneself; not arrogant.',              ex:'Despite his many awards, the scientist remained humble and approachable.' },
+  { word:'Inquisitive', root:'L. inquirere (to seek)',       def:'Curious; eager to know or learn.',                               ex:'The inquisitive child asked endless questions about the stars.' },
+  { word:'Judicious',   root:'L. judicium (judgment)',       def:'Having or showing good judgment; sensible.',                     ex:'A judicious leader listens before making any major decision.' },
+  { word:'Laudable',    root:'L. laudare (to praise)',       def:'Deserving praise and commendation.',                             ex:'Her laudable efforts to reduce waste inspired the whole school.' },
+  { word:'Meticulous',  root:'L. metus (fear) + -osus',     def:'Taking great care about details; very precise.',                 ex:'The meticulous architect checked every measurement twice.' },
+  { word:'Nostalgic',   root:'Gk. nostos + algos (pain)',   def:'Feeling a sentimental longing for the past.',                   ex:'Looking at old photos made him nostalgic for his childhood summers.' },
+  { word:'Obstinate',   root:'L. obstinare (to persist)',   def:'Stubbornly refusing to change one\'s opinion.',                  ex:'The obstinate child refused to apologize no matter what.' },
+  { word:'Prudent',     root:'L. prudens (foreseeing)',      def:'Acting with care and thought for the future; wise.',             ex:'It was prudent to save money before the expensive trip.' },
+  { word:'Reluctant',   root:'L. reluctari (to resist)',    def:'Unwilling; hesitant to do something.',                           ex:'She was reluctant to speak in front of such a large crowd.' },
+  { word:'Serene',      root:'L. serenus (clear, calm)',    def:'Calm, peaceful, and untroubled.',                                ex:'The serene lake reflected the mountains perfectly on a still morning.' },
+  { word:'Tenacious',   root:'L. tenax (holding fast)',     def:'Persistent; not easily stopped; stubborn in a good way.',        ex:'The tenacious climber reached the summit after three failed attempts.' },
+  { word:'Vibrant',     root:'L. vibrare (to vibrate)',     def:'Full of energy and enthusiasm; bright and striking.',            ex:'The vibrant marketplace buzzed with color, sound, and excitement.' },
+  { word:'Wary',        root:'O.E. wær (cautious)',         def:'Feeling or showing caution about possible dangers.',             ex:'She was wary of crossing the old bridge after the recent storms.' },
 ];
 
-const GRAMMAR=[
-  {id:'g01',q:'Which sentence correctly uses the subjunctive mood?',
-   opts:['If he was the president, policy would change overnight.','If he were the president, policy would change overnight.','If he is the president, policy would change overnight.','If he had been the president, policy would changed overnight.'],
-   ans:1,exp:'The subjunctive is required in "if" clauses expressing conditions contrary to fact. "Were" is the correct subjunctive form for all subjects. "Was" signals the indicative mood, which describes real or likely situations, not hypotheticals.'},
-  {id:'g02',q:'Choose the sentence that uses "who" or "whom" correctly.',
-   opts:['Whom do you think will win the award?','Give the medal to whomever finishes first.','She is the attorney whom the court appointed.','Whom shall we say is responsible?'],
-   ans:2,exp:'"Whom the court appointed" is correct — "whom" is the object of "appointed." In (A) the pronoun is subject of "will win," requiring "who." In (B) "whoever" is the subject of "finishes," so the nominative is needed. In (D) "who" is the subject of "is responsible."'},
-  {id:'g03',q:'Which sentence correctly handles a collective noun in American English?',
-   opts:['The jury have reached their verdict.','The jury has reached its verdict.','The jury have reached its verdict.','The jury has reached their verdict.'],
-   ans:1,exp:'In American English, collective nouns (jury, team, committee) take singular verbs and singular pronouns when acting as a unified body: "has reached its verdict." British English permits the plural verb, but American usage treats the collective as singular.'},
-  {id:'g04',q:'Identify the sentence with correct parallel structure using correlative conjunctions.',
-   opts:['She is not only intelligent but has great creativity too.','Not only did she study hard, but she also practiced daily.','She is not only intelligent but also has great creativity.','She not only is intelligent but creative also.'],
-   ans:1,exp:'"Not only...but also" must pair grammatically parallel elements. In (B), "did she study hard" parallels "she also practiced daily" — both are independent clauses. Option (A) pairs an adjective with a verb phrase. Option (C) pairs "is intelligent" with "has creativity" — two different verb types.'},
-  {id:'g05',q:'Which sentence correctly uses "as" rather than "like" before a clause?',
-   opts:['He ran the business like his father had before him.','He ran the business as his father had before him.','Nobody cooks like she does.','It tastes exactly like I remembered it would.'],
-   ans:1,exp:'"As" is correct before a clause (subject + verb): "as his father had [before him]." "Like" is correct before a noun or pronoun without a verb. Options (A), (C), and (D) place "like" before a clause with a verb, which is informal but grammatically incorrect in formal writing.'},
-  {id:'g06',q:'Which sentence correctly uses an absolute phrase?',
-   opts:['The storm finished, we began to assess the damage.','The storm having finished, we began to assess the damage.','The storm was finished, we began to assess the damage.','Having finished the storm, we began to assess the damage.'],
-   ans:1,exp:'An absolute phrase (noun + participle) modifies the entire main clause and is set off by a comma without a conjunction: "The storm having finished." Options (A) and (C) are comma splices. Option (D) creates a dangling modifier — "we" did not finish the storm.'},
-  {id:'g07',q:'Which sentence correctly uses an adjective after a linking verb?',
-   opts:['The bread tastes freshly out of the oven.','She feels badly about the mistake she made.','The music sounded beautifully throughout the hall.','The roses in the garden smell sweet.'],
-   ans:3,exp:'Linking verbs (taste, feel, sound, smell, seem, appear) take predicate adjectives: "smell sweet." "Freshly," "badly," and "beautifully" are adverbs and cannot describe the subject\'s quality. "Feels bad" is correct for emotional states; "feels badly" would mean a defective sense of touch.'},
-  {id:'g08',q:'Which sentence correctly uses the past perfect tense?',
-   opts:['By the time Maria arrived, everyone left already.','Everyone left before Maria had arrived already.','By the time Maria arrived, everyone had already left.','Maria arrived before everyone had already left.'],
-   ans:2,exp:'The past perfect ("had left") marks an action completed before another past action ("arrived"). Option (C) correctly applies the past perfect to the earlier event. Option (A) uses simple past for both, losing the sense of sequence. Option (B) misapplies it to the later action.'},
-  {id:'g09',q:'Which sentence uses "comprise" correctly?',
-   opts:['The anthology is comprised of twenty-three poems.','The anthology comprises twenty-three poems.','Twenty-three poems comprise of the anthology.','The anthology is comprising twenty-three poems.'],
-   ans:1,exp:'"Comprise" means "to include" or "to consist of" — the whole comprises its parts: "The anthology comprises poems." "Comprised of" (A) is widely used but technically incorrect; "composed of" is the correct alternative. "Comprise of" (C) is never correct.'},
-  {id:'g10',q:'Which sentence uses "lay" or "lie" correctly?',
-   opts:['She laid down for a nap after reading.','He lay the documents carefully on the table.','The cat has lain in the same spot all morning.','Please lie the books on the shelf for me.'],
-   ans:2,exp:'"Lie" (to recline) is intransitive: lie→lay→lain. "Lay" (to place) is transitive: lay→laid→laid. (A) "laid down" should be "lay down" (past of intransitive lie). (B) "lay the documents" should be "laid" (past of transitive lay). (D) "lie the books" should be "lay the books." (C) "has lain" — correct past participle of intransitive lie.'},
-  {id:'g11',q:'Which sentence is correctly punctuated as an indirect question?',
-   opts:['She asked whether the letter had arrived?','She asked, "Whether the letter had arrived."','She asked whether the letter had arrived.','She asked — "whether the letter had arrived?"'],
-   ans:2,exp:'An indirect question reports speech as a declarative statement and ends with a period, not a question mark. The question mark is reserved for direct questions in quotation marks: She asked, "Has the letter arrived?"'},
-  {id:'g12',q:'Which sentence contains an error in the use of "affect" or "effect"?',
-   opts:['The medication had no noticeable effect on her symptoms.','Cold weather can affect your mood significantly.','The committee voted to effect sweeping changes in policy.','His poor diet began to effect his athletic performance.'],
-   ans:3,exp:'Option (D) misuses "effect" where "affect" (verb, to influence) is needed. "Effect" as a verb means "to bring about" — as in "effect a change." Options (A–C) are all correct: "effect" as noun, "affect" as verb, and "effect" as a verb meaning "to produce/achieve."'},
-  {id:'g13',q:'Which sentence is correct regarding "who" versus "that" for people?',
-   opts:['The student that scored highest received the medal.','The students who studied hardest succeeded.','The doctor who treated him was highly experienced.','Both B and C are correct.'],
-   ans:3,exp:'In formal writing, "who" is the preferred relative pronoun for people, not "that." Both (B) and (C) correctly use "who" for human antecedents. Option (A) uses "that" for a person, which is considered informal or incorrect in formal and literary contexts.'},
-  {id:'g14',q:'Which sentence incorrectly uses a hyphen with a compound modifier?',
-   opts:['He delivered a well-prepared argument to the court.','She is a highly-skilled surgeon with decades of experience.','They signed a twenty-year lease on the building.','The well-planned event proceeded without any problems.'],
-   ans:1,exp:'Do not hyphenate compound modifiers beginning with an adverb ending in -ly: "highly skilled surgeon" (no hyphen). The -ly signals an adverb, making the relationship clear without a hyphen. Contrast: "well-prepared" requires a hyphen because "well" can be an adjective or adverb, creating potential ambiguity.'},
-  {id:'g15',q:'Which sentence has a clear, unambiguous pronoun reference?',
-   opts:['When Maria called Julia, she sounded upset.','After the students read the essays, they revised them.','The president told the senator that he had made an error.','The boy kicked the ball against the wall until it cracked.'],
-   ans:3,exp:'In (D), "it" unambiguously refers to "the wall" — balls do not typically crack against walls. Options (A), (B), and (C) each contain a pronoun that could refer to either of two nouns, creating dangerous ambiguity about who or what is meant.'},
+const GRAMMAR = [
+  {
+    id:'g01', q:'Choose the sentence with correct subject-verb agreement.',
+    opts:['Each of the players have their own locker.','Each of the players has his own locker.','Each of the players have his own locker.','Each of the players has their own lockers.'],
+    ans:1, exp:'"Each" is always singular, so it takes "has." The pronoun "his" (or "his or her") agrees with the singular "each." Though "their" is increasingly accepted in informal use, "has his" is the traditional correct form.'
+  },
+  {
+    id:'g02', q:'Which sentence uses a comma correctly before a coordinating conjunction?',
+    opts:['She studied hard, but she still felt nervous.','She studied hard but, she still felt nervous.','She studied, hard but she still felt nervous.','She studied hard but she, still felt nervous.'],
+    ans:0, exp:'Use a comma before a coordinating conjunction (for, and, nor, but, or, yet, so) when it joins two independent clauses. "She studied hard" and "she still felt nervous" are both complete sentences, so a comma before "but" is correct.'
+  },
+  {
+    id:'g03', q:'Which sentence avoids a dangling modifier?',
+    opts:['Finishing the race, the trophy was handed to her.','Finishing the race, she was handed the trophy.','The trophy was handed to her, finishing the race.','Having finished the race, the trophy gleamed in her hands.'],
+    ans:1, exp:'A participial phrase must modify the subject of the sentence. In (B), "she" is the one who finished the race, so the phrase correctly modifies her. In (A) and (D), the trophy is not finishing the race — that is a dangling modifier.'
+  },
+  {
+    id:'g04', q:'Which sentence uses the correct pronoun case?',
+    opts:['The coach praised both Marcus and I.','The coach praised both Marcus and me.','The coach praised both he and I.','The coach praised both him and I.'],
+    ans:1, exp:'"Me" is the correct object pronoun here — it is the object of "praised." To check, remove the other person: "the coach praised me" sounds correct, while "the coach praised I" does not. Always use object pronouns (me, him, her, us, them) as objects of verbs.'
+  },
+  {
+    id:'g05', q:'Select the correctly punctuated sentence.',
+    opts:['My favorite subjects are math science and history.','My favorite subjects are math, science, and history.','My favorite subjects are math, science and, history.','My favorite subjects are, math, science, and history.'],
+    ans:1, exp:'Items in a series are separated by commas. The Oxford (serial) comma before "and" is used before the final item: "math, science, and history." No comma follows the verb "are."'
+  },
+  {
+    id:'g06', q:'Which option corrects the faulty parallelism?',
+    opts:['He enjoys reading, to run, and swimming.','He enjoys reading, running, and to swim.','He enjoys to read, running, and swimming.','He enjoys reading, running, and swimming.'],
+    ans:3, exp:'Parallel structure requires all items in a series to use the same grammatical form. Option (D) uses three gerunds (reading, running, swimming), making the list consistent and grammatically balanced.'
+  },
+  {
+    id:'g07', q:'Choose the sentence that uses a semicolon correctly.',
+    opts:['I was tired; but I kept working.','I was tired; however, I kept working.','I was tired; and I kept working.','I was tired, however; I kept working.'],
+    ans:1, exp:'A semicolon followed by a conjunctive adverb ("however") and a comma is correct. Do not use a semicolon with coordinating conjunctions like "but" or "and" — those need only a comma.'
+  },
+  {
+    id:'g08', q:'Which sentence is in the active voice?',
+    opts:['The novel was written by the student.','The award was given to the team by the judges.','The student wrote the novel in one month.','A mistake was made by the committee.'],
+    ans:2, exp:'Active voice: subject (the student) performs the action (wrote). Passive voice reverses this: "was written by." Active voice is generally more direct and concise.'
+  },
+  {
+    id:'g09', q:'Which sentence uses an apostrophe correctly?',
+    opts:["The dogs collar was muddy after the walk.","The dog's collar was muddy after the walk.","The dogs' collar was muddy after the walk.","The dog\'s' collar was muddy after the walk."],
+    ans:1, exp:'"Dog\'s" shows singular possessive — one dog owns the collar. "Dogs\'" would mean multiple dogs share one collar. An apostrophe before the s shows singular possession.'
+  },
+  {
+    id:'g10', q:'Which sentence avoids a run-on error?',
+    opts:['The sun set, it grew cold quickly.','The sun set it grew cold quickly.','The sun set. It grew cold quickly.','The sun set and, it grew cold quickly.'],
+    ans:2, exp:'Two independent clauses cannot simply be joined with a comma (comma splice) or no punctuation (fused sentence). Separating them with a period is one correct solution. A semicolon would also work.'
+  },
+  {
+    id:'g11', q:'Which sentence uses "fewer" or "less" correctly?',
+    opts:['There is less students in this class than last year.','There are fewer students in this class than last year.','There are less homework assignments this week.','There is fewer traffic on the highway today.'],
+    ans:1, exp:'"Fewer" is used with countable nouns (students, assignments, cars). "Less" is used with uncountable/mass nouns (traffic, water, homework as a concept). "Fewer students" is correct because you can count individual students.'
+  },
+  {
+    id:'g12', q:'Which sentence is NOT a sentence fragment?',
+    opts:['Running through the park at sunrise.','Because the game was canceled.','The library closes at nine o\'clock.','After spending all afternoon studying.'],
+    ans:2, exp:'A complete sentence requires a subject and a predicate (a verb that makes a statement). Option (C) has both: subject "The library" and predicate "closes at nine o\'clock." The others are fragments — subordinate clauses or phrases without a main verb.'
+  },
+  {
+    id:'g13', q:'Which sentence uses quotation marks correctly?',
+    opts:['"Did she say, "I will be late"?" asked Tom.','Tom asked, "Did she say she would be late?"','Tom asked "did she say she would be late"?','Tom asked; "Did she say she would be late?"'],
+    ans:1, exp:'A direct quotation that is a question ends with a question mark inside the closing quotation marks. The attribution ("Tom asked") is followed by a comma. The first word inside the quotation is capitalized.'
+  },
+  {
+    id:'g14', q:'Which sentence avoids wordiness?',
+    opts:['At this point in time, we need to make a decision.','Due to the fact that it was raining, we stayed inside.','We need to make a decision now.','In the event that it rains, we will go inside.'],
+    ans:2, exp:'"We need to make a decision now" expresses the idea concisely. "At this point in time" can be replaced by "now," and "due to the fact that" can be replaced by "because." Good writing uses the fewest words needed.'
+  },
+  {
+    id:'g15', q:'Which sentence correctly uses "their," "there," or "they\'re"?',
+    opts:["The students left there books on the bus.","Their going to the game after school.","The team celebrated their victory together.","They're coats are hanging by the door."],
+    ans:2, exp:'"Their" shows possession (belonging to them): "their victory." "There" indicates a place. "They\'re" is a contraction of "they are." Option (C) is the only one that uses the correct form for its meaning.'
+  },
 ];
 
-const PASSAGES=[
-  {id:'p01',title:'Edmund Burke, Reflections on the Revolution in France (1790)',
-   text:`From Magna Carta to the Declaration of Right, it has been the uniform policy of our constitution to claim and assert our liberties as an entailed inheritance derived to us from our forefathers, and to be transmitted to our posterity as an estate specially belonging to the people of this kingdom, without any reference whatever to any more general or prior right.
+const PASSAGES = [
+  {
+    id:'p01',
+    title:'From Abraham Lincoln, Gettysburg Address (1863)',
+    text:`Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.
 
-By a constitutional policy, working after the pattern of nature, we receive, we hold, we transmit our government and our privileges in the same manner in which we enjoy and transmit our property and our lives. The institutions of policy, the goods of fortune, the gifts of providence are handed down to us, and from us, in the same course and order.`,
-   qs:[
-     {q:'Burke compares English liberties to:',
-      opts:['A revolutionary decree issued by the people','An inherited family estate passed through generations','A democratic contract renewed by each generation','A gift from foreign nations'],
-      ans:1,exp:'Burke repeatedly uses the language of inheritance and estate — "entailed inheritance," "transmitted to our posterity," "estate specially belonging" — to argue that liberty is held like property, passed from generation to generation rather than newly invented.'},
-     {q:'The word "entailed" in Burke\'s usage most nearly means:',
-      opts:['Described in extensive detail','Restricted in inheritance to a specific line of heirs','Earned through political struggle','Granted by royal decree alone'],
-      ans:1,exp:'An "entail" in property law restricts an estate so it passes down a specific family line and cannot be sold. Burke uses this legal term to argue that liberty is similarly inalienable, heritable, and not subject to the whims of any single generation.'},
-     {q:'Burke\'s argument implies that liberty is best preserved by:',
-      opts:['Constant reform and revision in each generation','Revolutionary overthrow of corrupt institutions','Continuity with historical precedent and inheritance','Universal abstract declarations of natural rights'],
-      ans:2,exp:'Burke\'s central theme is that English freedoms derive their strength from being handed down through history, not invented from abstract principles. Continuity and inheritance — not revolution — are his prescription for preserving liberty.'},
-   ]},
-  {id:'p02',title:'John Milton, Areopagitica (1644)',
-   text:`And though all the winds of doctrine were let loose to play upon the earth, so Truth be in the field, we do injuriously, by licensing and prohibiting, to misdoubt her strength. Let her and Falsehood grapple; who ever knew Truth put to the worse, in a free and open encounter? Her confuting is the best and surest suppressing.
+Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.
 
-For who knows not that Truth is strong, next to the Almighty? She needs no policies, nor stratagems, nor licensings to make her victorious; those are the shifts and the defences that Error uses against her power. Give her but room, and do not bind her when she sleeps.`,
-   qs:[
-     {q:'Milton\'s central argument is that Truth:',
-      opts:['Must be protected from falsehood by government licensing','Will prevail over falsehood if given freedom to compete openly','Is too fragile to survive unrestricted public debate','Requires the active suppression of dissenting opinion'],
-      ans:1,exp:'Milton argues that Truth does not need censorship ("licensing and prohibiting") to survive. In free and open encounter with falsehood, Truth will always win. Censorship therefore insults Truth by implying she cannot defend herself without help.'},
-     {q:'The phrase "let her and Falsehood grapple" personifies Truth and Falsehood as:',
-      opts:['Biblical figures from scripture','Political candidates in an election','Opponents in a physical contest or wrestling match','Scientific hypotheses under laboratory examination'],
-      ans:2,exp:'"Grapple" is a wrestling term. Milton personifies Truth and Falsehood as combatants to argue that the competition of ideas should be fought openly. Truth, he implies, always wins in a fair fight — so censorship only helps Error, not Truth.'},
-     {q:'Milton identifies "policies," "stratagems," and "licensings" as tools used by:',
-      opts:['Truth, to protect herself from Falsehood','Falsehood and Error, in their fight against Truth','The government, for the legitimate protection of citizens','Scholars, to advance legitimate knowledge'],
-      ans:1,exp:'Milton writes these are "the shifts and the defences that Error uses against her power." This is a powerful rhetorical reversal: censorship, presented as protecting truth, is actually the weapon of falsehood. Truth needs none of it.'},
-   ]},
-  {id:'p03',title:'Alexis de Tocqueville, Democracy in America (1840)',
-   text:`When the inhabitant of a democratic country compares himself individually with all those about him, he feels with pride that he is the equal of any of them; but when he comes to survey the totality of his fellows and to place himself in contrast with so huge a body, he is instantly overwhelmed by the sense of his own insignificance and weakness.
+But, in a larger sense, we cannot dedicate — we cannot consecrate — we cannot hallow — this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract.`,
+    qs:[
+      {
+        q:'The phrase "Four score and seven years ago" refers to:',
+        opts:['47 years before the speech','87 years before the speech','107 years before the speech','27 years before the speech'],
+        ans:1,
+        exp:'A "score" equals 20 years. Four score = 80. 80 + 7 = 87 years. Lincoln spoke in 1863, so he was referring to 1776, the year the Declaration of Independence was signed.'
+      },
+      {
+        q:'Lincoln uses the words "dedicate," "consecrate," and "hallow" together primarily to:',
+        opts:['Define three different types of ceremonies','Show that words alone cannot honor the soldiers\' sacrifice','Argue that the battlefield should become a national monument','Prove that only the living can honor the dead'],
+        ans:1,
+        exp:'Lincoln uses three near-synonyms in a row to emphasize that no human words or actions can match what the soldiers accomplished through their sacrifice. The soldiers have already consecrated the ground through their deaths — speeches cannot add to that.'
+      },
+      {
+        q:'The main purpose of Lincoln\'s speech is to:',
+        opts:['Criticize the generals who fought at Gettysburg','Explain the causes of the Civil War in detail','Honor the fallen soldiers and inspire continued dedication to the Union','Announce the end of the war'],
+        ans:2,
+        exp:'Lincoln honors the soldiers who died at Gettysburg, acknowledges that no speech can do them full justice, and urges the living to dedicate themselves to finishing the work the soldiers began — preserving the Union and its founding ideals.'
+      },
+    ]
+  },
+  {
+    id:'p02',
+    title:'From Benjamin Franklin, Poor Richard\'s Almanack (1732–1758)',
+    text:`Early to bed and early to rise, makes a man healthy, wealthy, and wise.
 
-The same equality that renders him independent of each of his fellow-citizens taken severally, exposes him alone and unprotected to the influence of the greater number. The public, therefore, among a democratic people, has a singular power: it does not persuade men to its beliefs, but it imposes them and makes them permeate the thinking of everyone by a kind of enormous pressure of the mind of all upon the intelligence of each.`,
-   qs:[
-     {q:'Tocqueville describes a paradox in which democratic equality makes the individual feel:',
-      opts:['Powerful against the collective, but weak against each person','Equal to each person, yet insignificant and overwhelmed before the mass','Uniformly powerful in all social and political contexts','Protected from tyranny by the support of the majority'],
-      ans:1,exp:'Tocqueville\'s paradox: equality with each individual produces pride, but the sheer size of the collective produces crushing insignificance. The same equality that liberates the individual from each neighbor exposes him to the overwhelming force of all neighbors combined.'},
-     {q:'The word "severally" as used here most nearly means:',
-      opts:['Harshly or with great severity','Individually; one by one; separately','As a group; collectively','In enormous or uncountable numbers'],
-      ans:1,exp:'"Severally" is a legal and formal term meaning "separately" or "individually." "Independent of each fellow-citizen taken severally" means independent of each one considered alone — which paradoxically leaves him defenseless against all of them acting together.'},
-     {q:'According to Tocqueville, the public\'s power in a democracy is most accurately described as:',
-      opts:['Violent and ultimately revolutionary in nature','Formally imposed through law and government decree','A psychological pressure that permeates thought without argument','Dependent primarily on the control of economic resources'],
-      ans:2,exp:'Tocqueville distinguishes persuasion from imposition. Democratic public opinion does not argue its way into the individual mind — it overwhelms through sheer collective pressure: "enormous pressure of the mind of all upon the intelligence of each." This is his famous theory of the tyranny of the majority.'},
-   ]},
-  {id:'p04',title:'Francis Bacon, Of Truth (1625)',
-   text:`What is Truth? said jesting Pilate; and would not stay for an answer. Certainly there be that delight in giddiness, and count it a bondage to fix a belief; affecting free-thinking as a humor; not caring for good-will, but only for the ease of spirit that comes from license.
+Lost time is never found again.
 
-But it is not only the difficulty and labor which men take in finding out of truth; nor again that, when it is found, it imposeth upon men's thoughts; that doth bring lies in favor. But a natural though corrupt love of the lie itself. One of the later school of the Grecians examineth the matter, and is at a stand to think what should be in it, that men should love lies; where neither they make for pleasure, as with poets, nor for advantage, as with the merchant; but for the lie's sake.`,
-   qs:[
-     {q:'The allusion to "jesting Pilate" characterizes some people\'s approach to truth as:',
-      opts:['Earnest and philosophically rigorous','Frivolous, dismissive, and unwilling to seek an answer','Scientifically careful but ultimately mistaken','Politically calculated and self-serving'],
-      ans:1,exp:'Pilate\'s question "What is truth?" is delivered as a jest — he asks but will not wait for an answer. Bacon uses this to identify a class of people who treat the question of truth as a game rather than a serious inquiry, delighting in the instability of never committing to a belief.'},
-     {q:'The word "affecting" as used in the passage most nearly means:',
-      opts:['Being genuinely and emotionally moved by something','Pretending to have; adopting artificially as a fashionable pose','Having a real influence or effect upon something','Feeling strong dislike or opposition toward something'],
-      ans:1,exp:'"Affecting free-thinking as a humor" means pretending to be a free-thinker as a fashionable affectation — not out of genuine philosophical commitment. This is the older meaning of "affect": to assume or feign a quality one does not actually possess.'},
-     {q:'Bacon argues that the deepest reason men prefer lies is:',
-      opts:['The difficulty of locating and identifying truth','The burden that truth imposes upon thought and conscience','A natural, corrupt love of falsehood for its own sake','The practical advantage that lies provide in commerce'],
-      ans:2,exp:'Bacon builds his argument carefully: it is not merely that truth is hard to find, nor that it is burdensome — these would be excuses. The real culprit is deeper: "a natural though corrupt love of the lie itself," loving falsehood even when it brings no pleasure or practical benefit.'},
-   ]},
+Diligence is the mother of good luck.
+
+An investment in knowledge pays the best interest.
+
+Well done is better than well said.
+
+He that is good for making excuses is seldom good for anything else.
+
+Three may keep a secret, if two of them are dead.
+
+Tell me and I forget. Teach me and I remember. Involve me and I learn.`,
+    qs:[
+      {
+        q:'The aphorism "Well done is better than well said" most closely means:',
+        opts:['Cooking is more important than talking','Actions are more valuable than words','Praise is unnecessary after a task is completed','It is better to finish quickly than to plan carefully'],
+        ans:1,
+        exp:'Franklin\'s saying contrasts doing ("well done") with speaking ("well said"), arguing that completing a task matters more than talking about it. This is a classic expression of the value of action over empty words.'
+      },
+      {
+        q:'Which of Franklin\'s sayings best supports the importance of taking responsibility rather than making excuses?',
+        opts:['"Lost time is never found again."','"Diligence is the mother of good luck."','"He that is good for making excuses is seldom good for anything else."','"Three may keep a secret, if two of them are dead."'],
+        ans:2,
+        exp:'This aphorism directly criticizes those who focus on excuse-making rather than getting things done, implying that the habit of excuses crowds out all other productivity and virtue.'
+      },
+      {
+        q:'The saying "Tell me and I forget. Teach me and I remember. Involve me and I learn." suggests that:',
+        opts:['Memorization is the best way to retain information','Active participation leads to the deepest learning','Listening to lectures is the most efficient study method','Reading silently is more effective than being taught'],
+        ans:1,
+        exp:'Franklin presents a progression from passive (being told) to active (being involved), arguing that involvement and experience produce genuine, lasting understanding — far more than simply hearing information.'
+      },
+    ]
+  },
+  {
+    id:'p03',
+    title:'From Helen Keller, The Story of My Life (1903)',
+    text:`The most important day I remember in all my life is the one on which my teacher, Anne Mansfield Sullivan, came to me. I am filled with wonder when I consider the immeasurable contrast between the two lives which it connects. It was the third of April, 1887, three months before I was seven years old.
+
+On the afternoon of that eventful day, I stood on the porch, dumb, expectant. I guessed vaguely from my mother's signs and from the hurrying to and fro in the house that something unusual was about to happen, so I went to the door and waited on the steps.
+
+The afternoon sun penetrated the mass of honeysuckle that covered the porch, and fell on my upturned face. My fingers felt the delicate symmetry of a leaf. I did not know what the future held of marvel or surprise for me.`,
+    qs:[
+      {
+        q:'Why does Keller describe the day Anne Sullivan arrived as "the most important day" of her life?',
+        opts:['Because it was her seventh birthday','Because it marked a dramatic turning point between two very different lives','Because the weather was unusually beautiful that day','Because she had been waiting alone on the porch for many hours'],
+        ans:1,
+        exp:'Keller says she is "filled with wonder when I consider the immeasurable contrast between the two lives which it connects" — life before and after Sullivan\'s arrival. The day is important because it was the beginning of her education and connection to language and the world.'
+      },
+      {
+        q:'The word "dumb" as Keller uses it in the passage most likely means:',
+        opts:['Foolish or unintelligent','Unable to speak; silent','Confused and disoriented','Unaware of her surroundings'],
+        ans:1,
+        exp:'"Dumb" in its older, literary sense means unable to speak — not unintelligent. Keller was deaf and blind since infancy and had not developed spoken language. The word is used here in its traditional meaning, contrasting with the communication Sullivan would later teach her.'
+      },
+      {
+        q:'The detail about Keller touching "the delicate symmetry of a leaf" is most significant because it:',
+        opts:['Shows that Keller was bored waiting on the porch','Illustrates how Keller experienced the world through touch','Proves that Keller could already read Braille','Suggests that Keller preferred nature to people'],
+        ans:1,
+        exp:'Since Keller was both blind and deaf, touch was one of her primary ways of understanding the world. This detail establishes that even before Sullivan\'s arrival, Keller was perceptive and curious — experiencing beauty through her fingertips rather than through sight or sound.'
+      },
+    ]
+  },
+  {
+    id:'p04',
+    title:'From C.S. Lewis, Mere Christianity (1952)',
+    text:`Everyone has heard people quarreling. Sometimes it sounds funny and sometimes it sounds merely unpleasant; but however it sounds, I believe we can learn something very important from listening to the kind of things they say. They say things like this: "How'd you like it if anyone did the same to you?" — "That's my seat, I was there first" — "Leave him alone, he isn't doing you any harm" — "Why should you shove in first?" — "Give me a bit of your orange, I gave you a bit of mine."
+
+People say things like that every day, educated and uneducated, old and young, all over the world. Now what interests me about all these remarks is that the man who makes them is not merely saying that the other man's behavior does not happen to please him. He is appealing to some kind of standard of behavior which he expects the other man to know about.`,
+    qs:[
+      {
+        q:'According to Lewis, what do all of the quarreling remarks have in common?',
+        opts:['They are all examples of childish or immature behavior','They all appeal to a shared standard of fair behavior that both parties are expected to recognize','They all involve arguments about physical objects like seats and food','They all show that people are naturally selfish'],
+        ans:1,
+        exp:'Lewis points out that in each example, the speaker does not merely express personal displeasure — they appeal to a standard ("that\'s fair," "you agreed," "you owe me") that they assume the other person also knows and accepts. This is central to Lewis\'s argument about a universal moral law.'
+      },
+      {
+        q:'The phrase "some kind of standard of behavior which he expects the other man to know about" suggests that Lewis believes:',
+        opts:['People make up rules as they go in arguments','There is a shared moral code that most humans naturally recognize','Only educated people understand right and wrong','Children are better at understanding fairness than adults'],
+        ans:1,
+        exp:'Lewis is building his argument that there is a universal moral law — a standard of right and wrong that people across all cultures and ages appeal to instinctively, even in minor everyday quarrels. The quarrelers assume the other person knows the rules, which means the rules exist independently.'
+      },
+      {
+        q:'Lewis\'s use of everyday quarreling examples is best described as:',
+        opts:['An attempt to entertain the reader with humor','A way to illustrate a philosophical point using familiar, relatable situations','Proof that most people are rude and selfish','A warning about the dangers of arguing with strangers'],
+        ans:1,
+        exp:'Lewis deliberately chooses simple, ordinary examples of quarrels rather than philosophical abstractions. This makes his point accessible and convincing — he shows that even in trivial arguments, people naturally appeal to a shared moral standard, which supports his larger philosophical argument.'
+      },
+    ]
+  },
 ];
 
-const MATH=[
-  {id:'m01',q:'Solve the system:\n2x + 3y = 12\nx − y = 1\n\nWhat is y?',
-   opts:['1','2','3','4'],ans:1,
-   exp:'From x − y = 1: x = y + 1. Substitute: 2(y+1) + 3y = 12 → 5y + 2 = 12 → 5y = 10 → y = 2.'},
-  {id:'m02',q:'What are the solutions to x² − 5x + 6 = 0?',
-   opts:['x = 1 or x = 6','x = 2 or x = 3','x = −2 or x = −3','x = −1 or x = 6'],ans:1,
-   exp:'Factor: (x − 2)(x − 3) = 0 → x = 2 or x = 3. Check: 4−10+6=0 ✓ and 9−15+6=0 ✓.'},
-  {id:'m03',q:'An exterior angle of a triangle measures 110°. One non-adjacent interior angle is 45°. Find the other non-adjacent interior angle.',
-   opts:['55°','65°','70°','75°'],ans:1,
-   exp:'Exterior Angle Theorem: an exterior angle equals the sum of the two non-adjacent interior angles. 110 = 45 + x → x = 65°.'},
-  {id:'m04',q:'A price increases by 20%, then decreases by 20%. What is the net percent change from the original?',
-   opts:['0%','−2%','−4%','−6%'],ans:2,
-   exp:'Start: 100. After +20%: 120. After −20% of 120: 96. Net = −4%. The two percentages don\'t cancel because they apply to different bases.'},
-  {id:'m05',q:'Alice finishes a report in 6 hours; Bob finishes the same report in 4 hours. Working together, how long does it take?',
-   opts:['2 hours','2 hours 24 minutes','2 hours 30 minutes','5 hours'],ans:1,
-   exp:'Combined rate: 1/6 + 1/4 = 5/12 per hour. Time = 12/5 = 2.4 hours = 2 hours 24 minutes.'},
-  {id:'m06',q:'Two similar triangles have sides in ratio 3:5. The smaller has area 27 cm². What is the larger triangle\'s area?',
-   opts:['35 cm²','45 cm²','75 cm²','125 cm²'],ans:2,
-   exp:'Area scales as the square of the linear ratio: (3/5)² = 9/25. Larger area = 27 × (25/9) = 75 cm².'},
-  {id:'m07',q:'A bag has 4 red, 3 blue, and 5 green marbles. Two are drawn without replacement. What is P(both red)?',
-   opts:['1/9','1/11','1/12','2/11'],ans:1,
-   exp:'P(1st red) = 4/12. P(2nd red | 1st red) = 3/11. P(both) = (4/12)(3/11) = 12/132 = 1/11.'},
-  {id:'m08',q:'Simplify: (2³ × 2⁵) ÷ 2⁴',
-   opts:['8','16','32','64'],ans:1,
-   exp:'Multiply same-base: 2³ × 2⁵ = 2⁸. Divide: 2⁸ ÷ 2⁴ = 2⁴ = 16.'},
-  {id:'m09',q:'Two trains depart from cities 300 miles apart, traveling toward each other at 60 mph and 40 mph. How many hours until they meet?',
-   opts:['2 hours','2.5 hours','3 hours','4 hours'],ans:2,
-   exp:'Combined closing speed = 100 mph. Time = 300 ÷ 100 = 3 hours.'},
-  {id:'m10',q:'A circle has radius 9 cm. What is the arc length for a 40° central angle? (π ≈ 3.14)',
-   opts:['3.14 cm','6.28 cm','12.56 cm','25.12 cm'],ans:1,
-   exp:'Arc = (40/360) × 2πr = (1/9) × 2 × 3.14 × 9 = 6.28 cm.'},
-  {id:'m11',q:'A 15-foot ladder leans against a wall with its base 9 feet from the wall. How high does it reach?',
-   opts:['10 ft','11 ft','12 ft','13 ft'],ans:2,
-   exp:'h² + 9² = 15² → h² = 225 − 81 = 144 → h = 12 ft. (9-12-15 is a 3-4-5 triple × 3.)'},
-  {id:'m12',q:'Solve: −3x + 7 ≥ 19',
-   opts:['x ≤ −4','x ≥ −4','x ≤ 4','x ≥ 4'],ans:0,
-   exp:'Subtract 7: −3x ≥ 12. Divide by −3 and flip the inequality sign: x ≤ −4. Always reverse the inequality when dividing by a negative.'},
-  {id:'m13',q:'A line passes through (−2, 5) with slope 3. What is the y-intercept?',
-   opts:['7','9','11','13'],ans:2,
-   exp:'y = mx + b → 5 = 3(−2) + b → 5 = −6 + b → b = 11.'},
-  {id:'m14',q:'A jar has nickels and dimes totaling $1.75. There are 25 coins total. How many dimes?',
-   opts:['8','9','10','12'],ans:2,
-   exp:'n + d = 25 and 0.05n + 0.10d = 1.75. Substitute n = 25 − d: 1.25 + 0.05d = 1.75 → d = 10.'},
-  {id:'m15',q:'For f(x) = x² − 4x + 3, what are the zeros (values where f(x) = 0)?',
-   opts:['x = 1 and x = −3','x = −1 and x = 3','x = 1 and x = 3','x = −1 and x = −3'],ans:2,
-   exp:'Factor: (x−1)(x−3) = 0 → x = 1 or x = 3. Verify: f(1) = 1−4+3 = 0 ✓. f(3) = 9−12+3 = 0 ✓.'},
+const MATH = [
+  { id:'m01', q:'If 4x + 9 = 29, what is x?',
+    opts:['4','5','6','8'], ans:1,
+    exp:'Subtract 9: 4x = 20. Divide by 4: x = 5.' },
+  { id:'m02', q:'A rectangle has a length of 14 cm and a width of 6 cm. What is its perimeter?',
+    opts:['20 cm','40 cm','84 cm','48 cm'], ans:1,
+    exp:'Perimeter = 2(length + width) = 2(14 + 6) = 2(20) = 40 cm.' },
+  { id:'m03', q:'What is 30% of 150?',
+    opts:['30','35','45','50'], ans:2,
+    exp:'30% of 150 = 0.30 × 150 = 45.' },
+  { id:'m04', q:'Simplify: 5² − √36',
+    opts:['13','17','19','31'], ans:2,
+    exp:'5² = 25. √36 = 6. 25 − 6 = 19.' },
+  { id:'m05', q:'A car travels 240 miles in 4 hours. What is its average speed?',
+    opts:['40 mph','50 mph','60 mph','80 mph'], ans:2,
+    exp:'Speed = Distance ÷ Time = 240 ÷ 4 = 60 mph.' },
+  { id:'m06', q:'The ratio of boys to girls in a class is 2:3. If there are 30 students total, how many are girls?',
+    opts:['12','15','18','20'], ans:2,
+    exp:'Total parts = 2 + 3 = 5. Girls = (3/5) × 30 = 18.' },
+  { id:'m07', q:'A right triangle has legs of 6 and 8. What is the length of the hypotenuse?',
+    opts:['9','10','11','12'], ans:1,
+    exp:'Use the Pythagorean theorem: 6² + 8² = c² → 36 + 64 = 100 → c = 10. (This is the classic 6-8-10 right triangle.)' },
+  { id:'m08', q:'Solve for y: 5y − 3 = 2y + 9',
+    opts:['2','3','4','6'], ans:2,
+    exp:'Subtract 2y: 3y − 3 = 9. Add 3: 3y = 12. Divide: y = 4.' },
+  { id:'m09', q:'A jacket originally costs $80 and is on sale for 25% off. What is the sale price?',
+    opts:['$55','$60','$65','$70'], ans:1,
+    exp:'Discount = 25% of 80 = $20. Sale price = $80 − $20 = $60.' },
+  { id:'m10', q:'What is the median of the data set: 3, 7, 9, 12, 4, 6, 11?',
+    opts:['6','7','9','12'], ans:1,
+    exp:'Arrange in order: 3, 4, 6, 7, 9, 11, 12. The median (middle value) of 7 numbers is the 4th value: 7.' },
+  { id:'m11', q:'A circle has a diameter of 10 cm. What is its area? (Use π ≈ 3.14)',
+    opts:['31.4 cm²','78.5 cm²','62.8 cm²','157 cm²'], ans:1,
+    exp:'Radius = diameter ÷ 2 = 5 cm. Area = πr² = 3.14 × 25 = 78.5 cm².' },
+  { id:'m12', q:'Which value of x makes the equation true? 3(x + 4) = 27',
+    opts:['5','7','9','23'], ans:0,
+    exp:'Distribute: 3x + 12 = 27. Subtract 12: 3x = 15. Divide: x = 5.' },
+  { id:'m13', q:'Two angles are complementary. One measures 34°. What is the other?',
+    opts:['34°','46°','56°','66°'], ans:2,
+    exp:'Complementary angles sum to 90°. 90 − 34 = 56°.' },
+  { id:'m14', q:'What is the slope of the line through (1, 3) and (4, 9)?',
+    opts:['1','2','3','6'], ans:1,
+    exp:'Slope = (y₂ − y₁) ÷ (x₂ − x₁) = (9 − 3) ÷ (4 − 1) = 6 ÷ 3 = 2.' },
+  { id:'m15', q:'A store sells 3 notebooks for $4.50. At that rate, how much do 8 notebooks cost?',
+    opts:['$10.00','$12.00','$13.50','$14.00'], ans:1,
+    exp:'Price per notebook = $4.50 ÷ 3 = $1.50. Cost of 8 = 8 × $1.50 = $12.00.' },
 ];
 
-/* ─── ICONS ─── */
+/* ── ICONS ── */
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
 const HomeIcon  =({s})=><Ic s={s} d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"/>;
 const BookIcon  =({s})=><Ic s={s} d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>;
@@ -231,34 +328,43 @@ const SigmaIcon =({s})=><Ic s={s} d="M18 4H6l6 8-6 8h12"/>;
 const ChevL     =({s})=><Ic s={s} d="M15 18l-6-6 6-6"/>;
 const ChevR     =({s})=><Ic s={s} d="M9 18l6-6-6-6"/>;
 
-/* ─── SHARED UI ─── */
+/* ── SHARED UI ── */
 function PBar({pct,color}){return<div className="progress-track"><div className="progress-fill" style={{width:`${pct}%`,background:color}}/></div>;}
+
 function Ring({pct,size=64,label,color}){
   const r=26,c=2*Math.PI*r,d=(pct/100)*c;
   return<div style={{textAlign:'center'}}>
     <svg width={size} height={size} viewBox="0 0 60 60" className="ring-svg">
       <circle cx="30" cy="30" r={r} fill="none" stroke="#2E2850" strokeWidth="5"/>
-      <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={`${d} ${c}`} strokeLinecap="round" style={{transition:'stroke-dasharray 0.5s ease'}}/>
+      <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeDasharray={`${d} ${c}`} strokeLinecap="round" style={{transition:'stroke-dasharray 0.5s ease'}}/>
     </svg>
     <div style={{fontFamily:'Crimson Pro',fontSize:11,color:'#6B5F4F',marginTop:2}}>{label}</div>
     <div style={{fontFamily:'JetBrains Mono',fontSize:11,color,marginTop:1}}>{pct}%</div>
   </div>;
 }
-function SecHead({color,supra,title,counter}){return<div style={{background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)',padding:'32px 18px 22px',borderBottom:'1px solid #2E2850',position:'relative',overflow:'hidden'}}>
-  <div style={{position:'absolute',top:-40,right:-40,width:140,height:140,borderRadius:'50%',background:`radial-gradient(circle,${color}10 0%,transparent 70%)`,pointerEvents:'none'}}/>
-  <div style={{color,fontSize:10,letterSpacing:'0.3em',fontFamily:'Crimson Pro',textTransform:'uppercase',marginBottom:6,opacity:0.8}}>{supra}</div>
-  <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
-    <h2 className="playfair" style={{fontSize:26,fontWeight:700,color:'#F2E8D0',margin:0}}>{title}</h2>
-    {counter&&<div style={{fontFamily:'JetBrains Mono',fontSize:11,color:'#4A3F6B'}}>{counter}</div>}
-  </div>
-</div>;}
-function ExpBox({correct,text}){return<div style={{background:correct?'rgba(74,140,111,0.10)':'rgba(139,48,48,0.10)',border:`1px solid ${correct?'#4A8C6F':'#8B3030'}`,borderRadius:9,padding:'12px 14px',marginBottom:14}}>
-  <div style={{color:correct?'#6ABF94':'#C25050',fontWeight:600,fontFamily:'Crimson Pro',fontSize:14,marginBottom:4}}>{correct?'✓ Correct':'✗ Not quite'}</div>
-  <div style={{color:'#9E8F75',fontSize:14,lineHeight:1.6,fontFamily:'Crimson Pro'}}>{text}</div>
-</div>;}
+
+function SecHead({color,supra,title,counter}){
+  return<div style={{background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)',padding:'32px 18px 22px',borderBottom:'1px solid #2E2850',position:'relative',overflow:'hidden'}}>
+    <div style={{position:'absolute',top:-40,right:-40,width:140,height:140,borderRadius:'50%',background:`radial-gradient(circle,${color}10 0%,transparent 70%)`,pointerEvents:'none'}}/>
+    <div style={{color,fontSize:10,letterSpacing:'0.3em',fontFamily:'Crimson Pro',textTransform:'uppercase',marginBottom:6,opacity:0.8}}>{supra}</div>
+    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
+      <h2 className="playfair" style={{fontSize:26,fontWeight:700,color:'#F2E8D0',margin:0}}>{title}</h2>
+      {counter&&<div style={{fontFamily:'JetBrains Mono',fontSize:11,color:'#4A3F6B'}}>{counter}</div>}
+    </div>
+  </div>;
+}
+
+function ExpBox({correct,text}){
+  return<div style={{background:correct?'rgba(74,140,111,0.10)':'rgba(139,48,48,0.10)',border:`1px solid ${correct?'#4A8C6F':'#8B3030'}`,borderRadius:9,padding:'12px 14px',marginBottom:14}}>
+    <div style={{color:correct?'#6ABF94':'#C25050',fontWeight:600,fontFamily:'Crimson Pro',fontSize:14,marginBottom:4}}>{correct?'✓ Correct':'✗ Not quite'}</div>
+    <div style={{color:'#9E8F75',fontSize:14,lineHeight:1.6,fontFamily:'Crimson Pro'}}>{text}</div>
+  </div>;
+}
+
 function ResCard({correct,total,color,onReset}){
   const pct=Math.round((correct/total)*100);
-  const msg=pct>=90?'Masterful.':pct>=75?'Strong work.':pct>=60?'Solid progress.':'Keep at it.';
+  const msg=pct>=90?'Excellent work!':pct>=75?'Strong performance.':pct>=60?'Good progress.':'Keep practicing.';
   return<div style={{padding:20,textAlign:'center'}}>
     <div style={{background:'#161225',border:'1px solid #2E2850',borderRadius:14,padding:'28px 20px'}}>
       <Ring pct={pct} size={90} label="Score" color={color}/>
@@ -268,9 +374,12 @@ function ResCard({correct,total,color,onReset}){
     </div>
   </div>;
 }
-function NxtBtn({onClick,label,color}){return<button onClick={onClick} style={{width:'100%',height:46,borderRadius:9,border:`1px solid ${color}44`,background:color+'18',color,fontFamily:'Crimson Pro',fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>{label}<ChevR s={16}/></button>;}
 
-/* ─── HOME ─── */
+function NxtBtn({onClick,label,color}){
+  return<button onClick={onClick} style={{width:'100%',height:46,borderRadius:9,border:`1px solid ${color}44`,background:color+'18',color,fontFamily:'Crimson Pro',fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>{label}<ChevR s={16}/></button>;
+}
+
+/* ── HOME ── */
 function HomeScreen({progress,onTab}){
   const mastered=(progress.vocab?.mastered||[]).length;
   const gPct=Math.round((progress.grammar?.correct||[]).length/GRAMMAR.length*100);
@@ -279,10 +388,10 @@ function HomeScreen({progress,onTab}){
   const mPct=Math.round((progress.math?.correct||[]).length/MATH.length*100);
   const vPct=Math.round(mastered/VOCAB.length*100);
   const secs=[
-    {id:'verbal', label:'Verbal Reasoning',    sub:'Advanced Vocabulary & Roots',  Icon:BookIcon, color:'#C8A84B',ring:vPct,badge:`${mastered}/${VOCAB.length} words`},
-    {id:'grammar',label:'Grammar & Usage',     sub:'Advanced Sentence Mechanics',  Icon:PenIcon,  color:'#B87A6A',ring:gPct,badge:`${GRAMMAR.length} questions`},
-    {id:'reading',label:'Reading Comprehension',sub:'Classical Primary Sources',   Icon:DocIcon,  color:'#7A9EC8',ring:rPct,badge:`${PASSAGES.length} passages`},
-    {id:'math',   label:'Quantitative Reasoning',sub:'Algebra, Geometry & Beyond', Icon:SigmaIcon,color:'#8AB87A',ring:mPct,badge:`${MATH.length} problems`},
+    {id:'verbal', label:'Verbal Reasoning',    sub:'Vocabulary & Word Roots',  Icon:BookIcon, color:'#C8A84B',ring:vPct,badge:`${mastered}/${VOCAB.length} words`},
+    {id:'grammar',label:'Grammar & Usage',     sub:'Sentence Mechanics',       Icon:PenIcon,  color:'#B87A6A',ring:gPct,badge:`${GRAMMAR.length} questions`},
+    {id:'reading',label:'Reading Comprehension',sub:'Classical Passages',      Icon:DocIcon,  color:'#7A9EC8',ring:rPct,badge:`${PASSAGES.length} passages`},
+    {id:'math',   label:'Quantitative Reasoning',sub:'Algebra & Geometry',     Icon:SigmaIcon,color:'#8AB87A',ring:mPct,badge:`${MATH.length} problems`},
   ];
   return<div style={{paddingBottom:24}}>
     <div style={{background:'linear-gradient(170deg,#1A1230 0%,#0D0A1A 100%)',padding:'44px 20px 28px',textAlign:'center',borderBottom:'1px solid #2E2850',position:'relative',overflow:'hidden'}}>
@@ -291,7 +400,7 @@ function HomeScreen({progress,onTab}){
       <h1 className="playfair" style={{fontSize:32,fontWeight:700,color:'#F2E8D0',margin:0,lineHeight:1.1,textShadow:'0 0 30px rgba(200,168,75,0.2)'}}>The Athenaeum</h1>
       <p style={{color:'#9E8F75',fontSize:15,marginTop:8,fontStyle:'italic',fontFamily:'Crimson Pro',marginBottom:0}}>CLT8 Study Companion</p>
       <div style={{display:'inline-block',marginTop:10,background:'#C8A84B22',border:'1px solid #C8A84B44',borderRadius:20,padding:'3px 12px'}}>
-        <span style={{fontFamily:'JetBrains Mono',fontSize:10,color:'#C8A84B',letterSpacing:'0.08em'}}>v3 · May 2026 · Advanced</span>
+        <span style={{fontFamily:'JetBrains Mono',fontSize:10,color:'#C8A84B',letterSpacing:'0.08em'}}>v4 · May 2026</span>
       </div>
     </div>
     <div style={{display:'flex',justifyContent:'space-around',padding:'22px 12px',borderBottom:'1px solid #1E1C2E'}}>
@@ -319,7 +428,7 @@ function HomeScreen({progress,onTab}){
   </div>;
 }
 
-/* ─── VOCAB ─── */
+/* ── VOCAB ── */
 function VocabDrill({progress,onProgress}){
   const [mode,setMode]=useState('card');
   const [idx,setIdx]=useState(0);
@@ -356,14 +465,16 @@ function VocabDrill({progress,onProgress}){
       {mode==='card'?<>
         <div key={animKey} className="fade-up" onClick={()=>setFlipped(f=>!f)} style={{background:'#161225',border:'1px solid #2E2850',borderRadius:14,padding:'28px 20px',minHeight:200,cursor:'pointer',userSelect:'none',marginBottom:14,position:'relative',display:'flex',flexDirection:'column',justifyContent:'center'}}>
           <div style={{position:'absolute',top:12,right:14,fontFamily:'Crimson Pro',fontSize:11,color:'#4A3F6B'}}>tap to flip</div>
-          {!flipped?<div style={{textAlign:'center'}}>
-            <div className="playfair" style={{fontSize:28,fontWeight:700,color:'#F2E8D0',marginBottom:10}}>{word.word}</div>
-            <div style={{fontFamily:'Crimson Pro',fontSize:13,color:'#6B5F4F',fontStyle:'italic'}}>{word.root}</div>
-          </div>:<div className="fade-up">
-            <div className="playfair" style={{fontSize:18,fontWeight:600,color:'#C8A84B',marginBottom:10}}>{word.word}</div>
-            <div style={{fontFamily:'Crimson Pro',fontSize:16,color:'#F2E8D0',lineHeight:1.55,marginBottom:10}}>{word.def}</div>
-            <div style={{fontFamily:'Crimson Pro',fontSize:14,color:'#9E8F75',fontStyle:'italic',lineHeight:1.5}}>"{word.ex}"</div>
-          </div>}
+          {!flipped
+            ?<div style={{textAlign:'center'}}>
+              <div className="playfair" style={{fontSize:28,fontWeight:700,color:'#F2E8D0',marginBottom:10}}>{word.word}</div>
+              <div style={{fontFamily:'Crimson Pro',fontSize:13,color:'#6B5F4F',fontStyle:'italic'}}>{word.root}</div>
+            </div>
+            :<div className="fade-up">
+              <div className="playfair" style={{fontSize:18,fontWeight:600,color:'#C8A84B',marginBottom:10}}>{word.word}</div>
+              <div style={{fontFamily:'Crimson Pro',fontSize:16,color:'#F2E8D0',lineHeight:1.55,marginBottom:10}}>{word.def}</div>
+              <div style={{fontFamily:'Crimson Pro',fontSize:14,color:'#9E8F75',fontStyle:'italic',lineHeight:1.5}}>"{word.ex}"</div>
+            </div>}
         </div>
         <div style={{display:'flex',gap:8,marginBottom:14}}>
           <button onClick={()=>nav(-1)} style={{width:44,height:44,borderRadius:8,border:'1px solid #2E2850',background:'#161225',color:'#9E8F75',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><ChevL s={18}/></button>
@@ -389,7 +500,7 @@ function VocabDrill({progress,onProgress}){
   </div>;
 }
 
-/* ─── GRAMMAR ─── */
+/* ── GRAMMAR ── */
 function GrammarDrill({progress,onProgress}){
   const [idx,setIdx]=useState(0);
   const [selected,setSelected]=useState(null);
@@ -422,7 +533,7 @@ function GrammarDrill({progress,onProgress}){
   </div>;
 }
 
-/* ─── READING ─── */
+/* ── READING ── */
 function ReadingDrill({progress,onProgress}){
   const [pIdx,setPIdx]=useState(0);
   const [qIdx,setQIdx]=useState(0);
@@ -471,7 +582,7 @@ function ReadingDrill({progress,onProgress}){
   </div>;
 }
 
-/* ─── MATH ─── */
+/* ── MATH ── */
 function MathDrill({progress,onProgress}){
   const [idx,setIdx]=useState(0);
   const [selected,setSelected]=useState(null);
@@ -504,7 +615,7 @@ function MathDrill({progress,onProgress}){
   </div>;
 }
 
-/* ─── APP ─── */
+/* ── APP ── */
 function App(){
   const [tab,setTab]=useState('home');
   const [progress,setProgress]=useState(()=>{const s=gs('progress');return s||{vocab:{mastered:[],seen:[]},grammar:{correct:[],wrong:[]},reading:{correct:[],wrong:[]},math:{correct:[],wrong:[]}};});
